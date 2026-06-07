@@ -502,6 +502,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .pv-sheet-gdoc p{font-size:12.5px;line-height:1.75;color:#3c4043;margin-bottom:6px;text-align:left}
 .pv-sheet.pv-sheet-app{padding:0;overflow:hidden;background:#fff;flex:none;aspect-ratio:auto;width:min(680px,80vw);height:min(820px,86vh);position:relative}
 .pv-sheet-app iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+.pv-live{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff;z-index:1}
 .pv-applabel{position:absolute;top:11px;right:11px;z-index:2;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
 /* figma-style live presence + cursors */
 .pv-presence{display:flex;align-items:center;margin-right:6px}
@@ -972,20 +973,17 @@ svg{display:block}
       </button>
     </div>
 
-    <button class="newbtn"><span class="plus">+</span><span class="label">New</span></button>
+    <button class="newbtn" onclick="newMenu()"><span class="plus">+</span><span class="label">New</span></button>
 
     <div class="nav-group">
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9"/></svg></span><span class="label">Home</span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span><span class="label">Recents</span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></span><span class="label">Starred</span></div>
+      <div class="nav-item" data-nav="home" onclick="navView('home')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9"/></svg></span><span class="label">Home</span></div>
+      <div class="nav-item" data-nav="recents" onclick="navView('recents')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span><span class="label">Recents</span></div>
+      <div class="nav-item" data-nav="starred" onclick="navView('starred')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></span><span class="label">Starred</span></div>
     </div>
 
     <div class="nav-group">
       <div class="nav-label">My Drive</div>
-      <div class="nav-item active" data-folder="Estate docs" draggable="true" ondragstart="dragItem(event,'folder','Estate docs')" onclick="enterFolder('Estate docs')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
-      <div class="nav-item" data-folder="School decision" draggable="true" ondragstart="dragItem(event,'folder','School decision')" onclick="enterFolder('School decision')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
-      <div class="nav-item" data-folder="Home renovation" draggable="true" ondragstart="dragItem(event,'folder','Home renovation')" onclick="enterFolder('Home renovation')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
-      <div class="nav-item" data-folder="Taxes 2025" draggable="true" ondragstart="dragItem(event,'folder','Taxes 2025')" onclick="enterFolder('Taxes 2025')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
+      <div id="navMyDrive"></div>
     </div>
 
     <div class="nav-group" id="pinGroup">
@@ -995,8 +993,8 @@ svg{display:block}
 
     <div class="nav-group">
       <div class="nav-label">Spaces</div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c3 0 5 2 5 5"/></svg></span><span class="label">Shared with me</span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 13a2 2 0 01-2 2H7a2 2 0 01-2-2z"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></span><span class="label">Trash</span></div>
+      <div class="nav-item" data-nav="shared" onclick="navView('shared')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c3 0 5 2 5 5"/></svg></span><span class="label">Shared with me</span></div>
+      <div class="nav-item" data-nav="trash" onclick="navView('trash')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 13a2 2 0 01-2 2H7a2 2 0 01-2-2z"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></span><span class="label">Trash</span></div>
     </div>
 
     <div class="rail-foot">
@@ -1976,7 +1974,7 @@ function renderPreview(id){
   pvZoom = 1;
   const custom = previewContentFor(f);
   if(f.live){
-    canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Google Drive</span><iframe src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe></div></div>`;
+    canvas.innerHTML = `<iframe class="pv-live" src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe>`;
     canvas.onscroll = null;
   } else if(f.type==='webapp'){
     canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Live app</span><iframe id="pvAppFrame" title="${f.short}" sandbox="allow-scripts"></iframe></div></div>`;
@@ -2065,7 +2063,55 @@ const FOLDERS=[
   {name:'Taxes 2025', items:24, agents:['claude'], populated:false},
 ];
 function folderIco(){return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';}
-function setNavActive(name){ document.querySelectorAll('.nav-item[data-folder]').forEach(n=>n.classList.toggle('active', n.dataset.folder===name)); }
+function setNavActive(name){
+  document.querySelectorAll('.nav-item[data-folder]').forEach(n=>n.classList.toggle('active', n.dataset.folder===name));
+  if(name) document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.remove('active'));
+}
+function renderNavFolders(){
+  const box=document.getElementById('navMyDrive'); if(!box)return;
+  const list = state.live ? LIVE_FOLDERS : FOLDERS;
+  box.innerHTML=(list||[]).map(f=>{
+    const key=state.live?f.id:f.name;
+    return `<div class="nav-item" data-folder="${(f.name||'').replace(/"/g,'&quot;')}" draggable="true" ondragstart="dragItem(event,'folder','${key}')" onclick="openFolderNav('${key}')"><span class="ico">${folderIco16()}</span><span class="label">${f.name}</span>${state.live?'':'<span class="agent-dot"></span>'}</div>`;
+  }).join('') || '<div class="pin-empty">No folders</div>';
+}
+function openFolderNav(key){
+  let name;
+  if(state.live){ const f=(LIVE_FOLDERS||[]).find(x=>x.id===key); name=f?f.name:'Folder'; openLiveFolder(key,name); }
+  else { name=key; enterFolder(key); }
+  setNavActive(name);
+}
+const NAVQ={
+  home:{title:'Home', q:"trashed=false and 'me' in owners", order:'modifiedByMeTime desc'},
+  recents:{title:'Recents', q:"trashed=false", order:'viewedByMeTime desc'},
+  starred:{title:'Starred', q:"starred=true and trashed=false", order:'modifiedTime desc'},
+  shared:{title:'Shared with me', q:"sharedWithMe=true and trashed=false", order:'modifiedTime desc'},
+  trash:{title:'Trash', q:"trashed=true", order:'modifiedTime desc'}
+};
+function navView(kind){
+  document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===kind));
+  document.querySelectorAll('.nav-item[data-folder]').forEach(n=>n.classList.remove('active'));
+  if(!state.live){ connectDrive(); return; }
+  const c=NAVQ[kind]; if(!c) return;
+  driveApi("files?q="+encodeURIComponent(c.q)+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=200&orderBy="+encodeURIComponent(c.order)+"&corpora=user")
+    .then(res=>showLiveList(c.title, res.files||[]))
+    .catch(e=>toast('Could not load '+c.title+': '+e.message));
+}
+function showLiveList(title, items){
+  state.level='folder'; FILES.length=0;
+  items.filter(d=>d.mimeType!=='application/vnd.google-apps.folder').forEach(d=>FILES.push(mapDriveFile(d)));
+  state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query='';
+  document.getElementById('crumbRoot').classList.remove('here');
+  document.getElementById('crumbSep').style.display=''; const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=title;
+  document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
+  setView('list');
+}
+function newMenu(){
+  if(!state.live){ connectDrive(); return; }
+  const name=prompt('New folder name','Untitled folder'); if(!name) return;
+  fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:JSON.stringify({name:name,mimeType:'application/vnd.google-apps.folder'})})
+    .then(r=>r.json()).then(()=>{ toast('Folder “'+name+'” created'); loadDriveRoot(); }).catch(e=>toast('Create failed: '+e.message));
+}
 function goMyDrive(){
   state.level='mydrive'; closeInfo(); closeAgent();
   document.querySelector('.stage-wrap').classList.add('ghost');
@@ -2073,7 +2119,7 @@ function goMyDrive(){
   sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Folders — each with its own agents.</div>
     <div class="md-connect"><div><b>Demo data.</b> Connect your real Google Drive to browse your actual files here.</div><button class="aabtn primary" onclick="connectDrive()"><svg width="14" height="14" viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg> Connect Google Drive</button></div>
     <div class="md-grid">${FOLDERS.map(f=>`
-      <div class="md-folder" onclick="enterFolder('${f.name}')">
+      <div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.name}')" onclick="enterFolder('${f.name}')">
         <div class="md-fico">${folderIco()}</div>
         <div><div class="md-fname">${f.name}</div>
         <div class="md-fmeta">${f.items} items &nbsp;·&nbsp; ${f.agents.map(p=>agentMark(p,12)).join('')} ${f.agents.length} agent${f.agents.length>1?'s':''}</div></div>
@@ -2934,15 +2980,29 @@ function dragItem(e,kind,key){
   e.dataTransfer.effectAllowed='copy';
   document.getElementById('app').classList.remove('rail-collapsed'); // expand so the drop target is visible
 }
-function pinLabel(kind,key){ if(kind==='folder') return key; const f=FILES.find(x=>x.id===key); return f?f.short:key; }
 function folderIco16(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';}
 function fileIco16(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3v5h5"/><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2z"/></svg>';}
 function addPin(kind,key){
-  if(PINS.some(p=>p.kind===kind&&p.key===key)){ toast('Already in shortcuts'); return; }
-  PINS.push({kind,key,label:pinLabel(kind,key)}); renderPins(); toast('Added to shortcuts');
+  let pin={kind,key};
+  if(kind==='folder'){
+    if(state.live){ const f=(LIVE_FOLDERS||[]).find(x=>x.id===key); pin.live=true; pin.id=key; pin.name=f?f.name:key; pin.label=pin.name; }
+    else { pin.name=key; pin.label=key; }
+  } else {
+    const f=FILES.find(x=>x.id===key); pin.label=f?f.short:key;
+    if(f&&f.live){ pin.live=true; ['id','name','short','type','ext','by','added','size','previewUrl','thumbnailLink','iconLink'].forEach(k=>pin[k]=f[k]); }
+  }
+  if(PINS.some(p=>p.kind===pin.kind&&p.label===pin.label)){ toast('Already in shortcuts'); return; }
+  PINS.push(pin); renderPins(); toast('Added to shortcuts');
 }
 function removePin(i){ PINS.splice(i,1); renderPins(); }
-function openPin(p){ if(p.kind==='folder') enterFolder(p.key); else { enterFolder('Estate docs'); selectFile(p.key); } }
+function openPin(p){
+  if(p.kind==='folder'){ if(p.live) openLiveFolder(p.id,p.name); else enterFolder(p.name); return; }
+  if(p.live){
+    if(!FILES.find(x=>x.id===p.id)) FILES.push({id:p.id,short:p.short||p.label,name:p.name||p.label,type:p.type||'doc',ext:p.ext||'',by:p.by||'Me',added:p.added||0,size:p.size||'—',live:true,previewUrl:p.previewUrl,thumbnailLink:p.thumbnailLink,iconLink:p.iconLink,title:[p.name||p.label]});
+    state.level='folder'; document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
+    setView('list'); selectFile(p.id);
+  } else { enterFolder('Estate docs'); selectFile(p.key); }
+}
 function renderPins(){
   const z=document.getElementById('pins'); if(!z)return;
   if(!PINS.length){ z.innerHTML='<div class="pin-empty" id="pinEmpty">Drag files or folders here</div>'; return; }
@@ -3056,7 +3116,7 @@ function mapDriveFile(d){
 }
 function loadDriveRoot(){
   driveApi("files?q="+encodeURIComponent("'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")+"&fields=files(id,name)&pageSize=200&orderBy=name")
-    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderMyDriveLive(); })
+    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderNavFolders(); renderMyDriveLive(); })
     .catch(e=>toast('Could not load Drive: '+e.message));
 }
 function renderMyDriveLive(){
@@ -3064,7 +3124,7 @@ function renderMyDriveLive(){
   document.querySelector('.stage-wrap').classList.add('ghost');
   const sc=document.getElementById('screen'); sc.classList.remove('ghost');
   sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Your live Google Drive · ${LIVE_FOLDERS.length} folder${LIVE_FOLDERS.length===1?'':'s'}</div>
-    <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${f.name}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
+    <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.id}')" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${f.name}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
   document.getElementById('crumbRoot').classList.add('here');
   document.getElementById('crumbSep').style.display='none';
   document.getElementById('folderCrumb').style.display='none';
@@ -3080,6 +3140,7 @@ function openLiveFolder(id,name){
       const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
       document.getElementById('screen').classList.add('ghost');
       document.querySelector('.stage-wrap').classList.remove('ghost');
+      setNavActive(name);
       setView('list');
     }).catch(e=>toast('Could not open folder: '+e.message));
 }
@@ -3134,7 +3195,7 @@ function moveCur(i){
 renderPresence();
 renderRoster();
 renderDrawerHead();
-renderOpenItems(); renderTasks(); renderPins();
+renderOpenItems(); renderTasks(); renderPins(); renderNavFolders();
 renderPvPresence(); initCursors();
 renderList(); renderFeeds(); renderInfo();
 const _p=new URLSearchParams(location.search), _v=_p.get('v'), _sel=_p.get('sel');
