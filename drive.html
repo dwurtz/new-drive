@@ -876,11 +876,24 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .cf-nav:hover{background:var(--hover)}
 .cf-nav.prev{left:22px}.cf-nav.next{right:22px}
 
-.app.in-carousel #infoBtn{display:none}
+.app.in-carousel #infoBtn{opacity:.3;pointer-events:none}
+/* drag-to-sidebar shortcuts */
+.pin-zone{display:flex;flex-direction:column;gap:2px;min-height:14px;border-radius:10px;padding:2px;transition:.15s}
+.pin-empty{font-size:11.5px;color:var(--faint);padding:6px 12px;line-height:1.4}
+.app.rail-collapsed .pin-empty{display:none}
+.rail.drag-over .pin-zone{outline:2px dashed var(--accent);outline-offset:1px;background:var(--accent-soft);min-height:42px}
+.rail.drag-over .nav-label{color:var(--accent)}
+.pin-item .pin-x{margin-left:auto;width:18px;height:18px;border-radius:5px;color:var(--faint);font-size:16px;line-height:1;display:grid;place-items:center;opacity:0;flex:none}
+.pin-item:hover .pin-x{opacity:1}
+.pin-item .pin-x:hover{background:var(--hover);color:var(--ink)}
+.app.rail-collapsed .pin-item .pin-x{display:none}
+.frow[draggable=true],.gcard[draggable=true],.nav-item[draggable=true]{cursor:pointer}
 /* anchored comment pins + bubbles */
 .cmt-pin{position:absolute;transform:translate(-3px,-100%);z-index:7;cursor:pointer;border:none;background:none;padding:0;line-height:0}
 .cmt-dot{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50% 50% 50% 3px;background:var(--c);color:#fff;font-size:10px;font-weight:700;box-shadow:0 2px 7px rgba(0,0,0,.32);border:2px solid #fff}
-.cmt-bub{display:none;position:absolute;left:32px;top:-4px;width:210px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lg);padding:11px 13px;font-size:12.5px;line-height:1.5;color:var(--ink);text-align:left;z-index:8;white-space:normal}
+.cmt-bub{display:none;position:absolute;left:32px;top:-4px;width:210px;max-width:46vw;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lg);padding:11px 13px;font-size:12.5px;line-height:1.5;color:var(--ink);text-align:left;z-index:8;white-space:normal}
+.cmt-pin.flip .cmt-bub{left:auto;right:34px}
+.cmt-pin.down .cmt-bub{top:30px}
 .cmt-bub b{display:block;font-size:12px;margin-bottom:4px}
 .cmt-pin:hover .cmt-bub,.cmt-pin.open .cmt-bub{display:block}
 .cmt-pin.pulse .cmt-dot{animation:cpulse 1s var(--ease)}
@@ -954,10 +967,15 @@ svg{display:block}
 
     <div class="nav-group">
       <div class="nav-label">My Drive</div>
-      <div class="nav-item active" data-folder="Estate docs" onclick="enterFolder('Estate docs')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
-      <div class="nav-item" data-folder="School decision" onclick="enterFolder('School decision')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
-      <div class="nav-item" data-folder="Home renovation" onclick="enterFolder('Home renovation')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
-      <div class="nav-item" data-folder="Taxes 2025" onclick="enterFolder('Taxes 2025')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
+      <div class="nav-item active" data-folder="Estate docs" draggable="true" ondragstart="dragItem(event,'folder','Estate docs')" onclick="enterFolder('Estate docs')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
+      <div class="nav-item" data-folder="School decision" draggable="true" ondragstart="dragItem(event,'folder','School decision')" onclick="enterFolder('School decision')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
+      <div class="nav-item" data-folder="Home renovation" draggable="true" ondragstart="dragItem(event,'folder','Home renovation')" onclick="enterFolder('Home renovation')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
+      <div class="nav-item" data-folder="Taxes 2025" draggable="true" ondragstart="dragItem(event,'folder','Taxes 2025')" onclick="enterFolder('Taxes 2025')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
+    </div>
+
+    <div class="nav-group" id="pinGroup">
+      <div class="nav-label">Shortcuts</div>
+      <div id="pins" class="pin-zone"><div class="pin-empty" id="pinEmpty">Drag files or folders here</div></div>
     </div>
 
     <div class="nav-group">
@@ -1855,7 +1873,8 @@ function rowHTML(f){
   const by    = f.byAgent ? `${SPARK} ${f.by}` : f.by;
   const isChecked = state.checked.has(f.id);
   return `<div class="frow ${state.selected===f.id?'active':''} ${fut?'future':''} ${isChecked?'checked':''}"
-       data-id="${f.id}" onclick="rowClick(event,'${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')">
+       data-id="${f.id}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')"
+       onclick="rowClick(event,'${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')">
     <span class="fcheck" onclick="toggleCheck(event,'${f.id}')" title="Select">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
     </span>
@@ -1919,7 +1938,7 @@ function renderGallery(){
     <h3 class="section-h" style="padding:0 2px">All documents</h3>
     <div class="gal-grid">
       ${others.map(f=>`
-        <div class="gcard" onclick="selectFile('${f.id}')">
+        <div class="gcard" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" onclick="selectFile('${f.id}')">
           <div class="gpage">${renderThumb(f,'gallery')}</div>
           <div class="gcard-foot"><b>${f.short}</b><span>${f.byAgent?SPARK+' ':''}${f.by} · ${dstr(daysAgo(f.added))}</span></div>
         </div>`).join('')}
@@ -2765,6 +2784,8 @@ function renderCommentPins(f){
     const pin=document.createElement('button');
     pin.className='cmt-pin'; pin.id='pin-'+f.id+'-'+c.id;
     pin.style.left=c.x+'%'; pin.style.top=c.y+'%'; pin.style.setProperty('--c', c.color);
+    if(c.x>52) pin.classList.add('flip');
+    if(c.y<22) pin.classList.add('down');
     pin.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.cmt-pin.open').forEach(p=>{if(p!==pin)p.classList.remove('open');}); pin.classList.toggle('open'); };
     pin.innerHTML=`<span class="cmt-dot">${commentInitials(c)}</span><span class="cmt-bub"><b>${c.author}</b>${c.text}</span>`;
     sheet.appendChild(pin);
@@ -2886,6 +2907,39 @@ function toggleInfo(){ state.infoOpen ? closeInfo() : openInfo(); }
 document.getElementById('infoBtn').addEventListener('click',toggleInfo);
 
 /* ============ rail ============ */
+/* ============ drag files/folders → sidebar shortcuts ============ */
+const PINS=[];
+function dragItem(e,kind,key){
+  e.dataTransfer.setData('text/plain', kind+':'+key);
+  e.dataTransfer.effectAllowed='copy';
+  document.getElementById('app').classList.remove('rail-collapsed'); // expand so the drop target is visible
+}
+function pinLabel(kind,key){ if(kind==='folder') return key; const f=FILES.find(x=>x.id===key); return f?f.short:key; }
+function folderIco16(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';}
+function fileIco16(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3v5h5"/><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2z"/></svg>';}
+function addPin(kind,key){
+  if(PINS.some(p=>p.kind===kind&&p.key===key)){ toast('Already in shortcuts'); return; }
+  PINS.push({kind,key,label:pinLabel(kind,key)}); renderPins(); toast('Added to shortcuts');
+}
+function removePin(i){ PINS.splice(i,1); renderPins(); }
+function openPin(p){ if(p.kind==='folder') enterFolder(p.key); else { enterFolder('Estate docs'); selectFile(p.key); } }
+function renderPins(){
+  const z=document.getElementById('pins'); if(!z)return;
+  if(!PINS.length){ z.innerHTML='<div class="pin-empty" id="pinEmpty">Drag files or folders here</div>'; return; }
+  z.innerHTML=PINS.map((p,i)=>`<div class="nav-item pin-item" title="${p.label}" onclick="openPin(PINS[${i}])">
+    <span class="ico">${p.kind==='folder'?folderIco16():fileIco16()}</span>
+    <span class="label">${p.label}</span>
+    <button class="pin-x" title="Remove" onclick="event.stopPropagation();removePin(${i})">×</button>
+  </div>`).join('');
+}
+(function(){
+  const rail=document.querySelector('.rail');
+  rail.addEventListener('dragover',e=>{ if((e.dataTransfer.types||[]).indexOf('text/plain')>=0){ e.preventDefault(); e.dataTransfer.dropEffect='copy'; rail.classList.add('drag-over'); }});
+  rail.addEventListener('dragleave',e=>{ if(!rail.contains(e.relatedTarget)) rail.classList.remove('drag-over'); });
+  rail.addEventListener('drop',e=>{ e.preventDefault(); rail.classList.remove('drag-over'); const d=e.dataTransfer.getData('text/plain'); const i=d.indexOf(':'); if(i>0) addPin(d.slice(0,i), d.slice(i+1)); });
+  window.addEventListener('dragend',()=>{ rail.classList.remove('drag-over'); autoRail(); });
+})();
+
 let _railManual=false;
 document.getElementById('railToggle').addEventListener('click',()=>{ _railManual=true; document.getElementById('app').classList.toggle('rail-collapsed'); });
 function fourPanels(){ // nav + file list + preview + right panel
@@ -2971,7 +3025,7 @@ function moveCur(i){
 renderPresence();
 renderRoster();
 renderDrawerHead();
-renderOpenItems(); renderTasks();
+renderOpenItems(); renderTasks(); renderPins();
 renderPvPresence(); initCursors();
 renderList(); renderFeeds(); renderInfo();
 const _p=new URLSearchParams(location.search), _v=_p.get('v'), _sel=_p.get('sel');
