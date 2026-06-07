@@ -957,6 +957,28 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 #driveCidInput{width:100%;padding:11px 13px;border:1px solid var(--line-2);border-radius:11px;font-family:"JetBrains Mono",monospace;font-size:12px;margin-bottom:16px;outline:none}
 #driveCidInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .dlg-act{display:flex;justify-content:flex-end;gap:8px}
+/* ---------- columns (Finder Miller columns) ---------- */
+.columns{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;background:var(--surface);min-height:0}
+.columns::-webkit-scrollbar{height:10px}
+.columns::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
+.col{flex:none;width:290px;border-right:1px solid var(--line);overflow-y:auto;padding:6px}
+.col::-webkit-scrollbar{width:8px}
+.col::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--surface)}
+.col-row{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;cursor:pointer;font-size:13.5px;white-space:nowrap}
+.col-row:hover{background:var(--hover)}
+.col-row.sel{background:var(--sel)}
+.col-ico{flex:none;color:var(--muted);display:flex}
+.col-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.col-chev{color:var(--faint);flex:none;font-size:15px}
+.col-load,.col-empty{padding:14px 10px;color:var(--faint);font-size:12.5px}
+.col-preview{width:310px;background:var(--surface-2)}
+.cp{padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.cp-img{max-width:100%;border-radius:8px;box-shadow:var(--shadow-md)}
+.cp-icon img{width:72px;height:72px}
+.cp-name{font-weight:600;font-size:14.5px;word-break:break-word;line-height:1.35}
+.cp-meta{font-size:12px;color:var(--faint);line-height:1.7}
+.cp-open{margin-top:4px}
+
 svg{display:block}
 .ghost{display:none!important}
 </style>
@@ -1045,6 +1067,7 @@ svg{display:block}
       <div class="seg" id="viewSeg">
         <button data-view="list" class="on" title="List + preview"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
         <button data-view="gallery" title="Cover / gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/></svg></button>
+        <button data-view="columns" title="Columns"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="5.5" height="16" rx="1"/><rect x="10.5" y="4" width="5.5" height="16" rx="1"/><rect x="18" y="4" width="3" height="16" rx="1"/></svg></button>
         <button data-view="carousel" title="Carousel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="11" rx="2"/><path d="M5 20h.01M9 20h.01M13 20h.01M17 20h.01" stroke-linecap="round"/></svg></button>
       </div>
       <button class="tbtn" id="infoBtn" title="Folder activity"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
@@ -1089,6 +1112,7 @@ svg{display:block}
           <div class="lp-list" id="fileList"></div>
           <div class="gallery ghost" id="gallery"></div>
           <div class="carousel ghost" id="carousel"></div>
+          <div class="columns ghost" id="columns"></div>
         </div>
 
         <!-- stage -->
@@ -2114,6 +2138,7 @@ function renderDetails(f){
 /* ============ view switch ============ */
 document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setView(b.dataset.view);});
 const carousel=document.getElementById('carousel');
+const columnsEl=document.getElementById('columns');
 /* ============ breadcrumb navigation (My Drive ↔ folders) ============ */
 const FOLDERS=[
   {name:'Estate docs', items:19, agents:['gemini','claude'], populated:true},
@@ -2223,19 +2248,20 @@ function setView(v){
   document.getElementById('listpane').classList.remove('collapsed');
   document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
-  const full=(v==='gallery'||v==='carousel');
+  const full=(v==='gallery'||v==='carousel'||v==='columns');
   if(full){
     state.selected=null;
     home.style.display=''; preview.style.display='none'; emptyHint.style.display='none';
     lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
     gallery.classList.toggle('ghost', v!=='gallery');
     carousel.classList.toggle('ghost', v!=='carousel');
+    columnsEl.classList.toggle('ghost', v!=='columns');
     stage.classList.add('ghost','is-home');
-    if(v==='gallery') renderGallery(); else renderCarousel();
+    if(v==='gallery') renderGallery(); else if(v==='carousel') renderCarousel(); else renderColumns();
     if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
   }else{
     lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
-    gallery.classList.add('ghost'); carousel.classList.add('ghost');
+    gallery.classList.add('ghost'); carousel.classList.add('ghost'); columnsEl.classList.add('ghost');
     stage.classList.remove('ghost','is-home');
     renderList();
     const vis=getVisibleFiles();
@@ -3267,6 +3293,49 @@ function openLiveFolder(id,name){
       setView('list');
     }).catch(e=>toast('Could not open folder: '+e.message));
 }
+/* ---- columns view (Finder Miller columns) ---- */
+let COL_PATH=[], colCache={}, colSelectedFile=null, colFileObj=null;
+function colChildren(id){
+  if(colCache[id]) return Promise.resolve(colCache[id]);
+  return driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=400&orderBy=folder,name")
+    .then(res=>{ const items=(res.files||[]).map(mapDriveFile); colCache[id]=items; return items; });
+}
+function renderColumns(){
+  if(!state.live){ showConnectLanding(); return; }
+  const cont=document.getElementById('columns'); if(!cont) return;
+  if(!COL_PATH.length) COL_PATH=[{id:'root',name:'My Drive'}];
+  cont.innerHTML='';
+  COL_PATH.forEach((node,li)=>{
+    const col=document.createElement('div'); col.className='col'; cont.appendChild(col);
+    col.innerHTML='<div class="col-load">Loading…</div>';
+    colChildren(node.id).then(items=>{
+      col.innerHTML=items.map(f=>{
+        const sel=(COL_PATH[li+1]&&COL_PATH[li+1].id===f.id)||colSelectedFile===f.id;
+        return `<div class="col-row ${sel?'sel':''}" onclick="colClick(${li},'${f.id}')">
+          <span class="col-ico">${f.isFolder?folderIco16():fileIco16()}</span>
+          <span class="col-name">${f.name}</span>${f.isFolder?'<span class="col-chev">›</span>':''}</div>`;
+      }).join('')||'<div class="col-empty">Empty folder</div>';
+      cont.scrollLeft=cont.scrollWidth;
+    }).catch(()=>{ col.innerHTML='<div class="col-empty">Could not load</div>'; });
+  });
+  if(colSelectedFile&&colFileObj){
+    const f=colFileObj, pcol=document.createElement('div'); pcol.className='col col-preview'; cont.appendChild(pcol);
+    const thumb = (f.type==='image'&&f.thumbnailLink) ? `<img class="cp-img" src="${f.thumbnailLink}" referrerpolicy="no-referrer">`
+      : `<div class="cp-icon">${f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16()}</div>`;
+    pcol.innerHTML=`<div class="cp">${thumb}<div class="cp-name">${f.name}</div>
+      <div class="cp-meta">${typeLabel(f)} · ${f.size||'—'}<br>Modified ${dstr(daysAgo(f.added))}</div>
+      <button class="aabtn primary cp-open" onclick="openColFile()">Open</button></div>`;
+  }
+  cont.scrollLeft=cont.scrollWidth;
+}
+function colClick(level,id){
+  const items=colCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
+  COL_PATH=COL_PATH.slice(0,level+1);
+  if(f.isFolder){ COL_PATH.push({id:f.id,name:f.name}); colSelectedFile=null; colFileObj=null; }
+  else { colSelectedFile=f.id; colFileObj=f; }
+  renderColumns();
+}
+function openColFile(){ const f=colFileObj; if(!f) return; if(!FILES.find(x=>x.id===f.id)) FILES.push(f); openFocused(f.id); }
 /* ---- live image (white viewer) + real Drive comments ---- */
 let liveComments=[], liveCommentFile=null;
 function loadLiveImage(f){
