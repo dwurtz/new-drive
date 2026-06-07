@@ -503,6 +503,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .pv-sheet.pv-sheet-app{padding:0;overflow:hidden;background:#fff;flex:none;aspect-ratio:auto;width:min(680px,80vw);height:min(820px,86vh);position:relative}
 .pv-sheet-app iframe{width:100%;height:100%;border:0;display:block;background:#fff}
 .pv-live{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff;z-index:1}
+.pv-live-img{position:absolute;inset:0;display:grid;place-items:center;background:#fff;overflow:auto;padding:28px;cursor:crosshair}
+.pv-img-wrap{position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0}
+.pv-img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:var(--shadow-lg);border-radius:4px;display:block}
+.pv-img-loading{color:var(--faint);font-size:13px}
+.ipc-add{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);background:none;padding:2px 6px;border-radius:6px}
+.ipc-add:hover{background:var(--accent-soft)}
 .pv-applabel{position:absolute;top:11px;right:11px;z-index:2;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
 /* figma-style live presence + cursors */
 .pv-presence{display:flex;align-items:center;margin-right:6px}
@@ -921,6 +927,11 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .md-fmeta{font-size:12px;color:var(--faint);margin-top:3px;display:flex;align-items:center;gap:4px}
 .md-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--faint);text-align:center;gap:12px;line-height:1.6}
 .md-empty svg{opacity:.5}
+.landing{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;padding:40px}
+.landing-logo{margin-bottom:4px}
+.landing-h{font-family:"Fraunces",serif;font-size:34px;font-weight:600;letter-spacing:-.02em}
+.landing-sub{color:var(--muted);font-size:15px;line-height:1.6;max-width:44ch}
+.landing-btn{margin-top:10px;padding:11px 18px;font-size:14px}
 .md-connect{display:flex;align-items:center;gap:16px;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:24px;max-width:1100px;font-size:14px;color:var(--muted)}
 .md-connect b{color:var(--ink)}
 .md-connect .aabtn{flex:none;white-space:nowrap}
@@ -1013,10 +1024,10 @@ svg{display:block}
       </div>
       <div class="search" id="search">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-        <span class="scope-chip" id="scopeChip">
+        <span class="scope-chip" id="scopeChip" style="display:none">
           <span class="sc-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
-          Estate docs
-          <button class="scope-x" onclick="clearScope()" title="Search everywhere"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <span id="scopeChipLabel">My Drive</span>
+          <button class="scope-x" onclick="goMyDrive()" title="Leave folder"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         </span>
         <input id="searchInput" placeholder="Ask or search…">
       </div>
@@ -1025,7 +1036,7 @@ svg{display:block}
         <button data-view="gallery" title="Cover / gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/></svg></button>
         <button data-view="carousel" title="Carousel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="11" rx="2"/><path d="M5 20h.01M9 20h.01M13 20h.01M17 20h.01" stroke-linecap="round"/></svg></button>
       </div>
-      <button class="tbtn on" id="infoBtn" title="Folder activity"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
+      <button class="tbtn" id="infoBtn" title="Folder activity"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
 
       <!-- Google cluster (monochrome) -->
       <div class="gcluster">
@@ -1123,7 +1134,7 @@ svg{display:block}
         </div>
 
         <!-- info / activity panel (with vertical time scrubber) -->
-        <div class="infopanel open" id="infopanel">
+        <div class="infopanel" id="infopanel">
           <div class="ip-head">
             <div><div class="ip-title" id="ipTitle">Folder activity</div><div class="ip-sub" id="ipSub">Who did what in Estate docs</div></div>
             <button class="tbtn" onclick="toggleInfo()" title="Hide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -1402,7 +1413,7 @@ state.activeAgent = null;
 state.spawning = false;
 state.query = '';
 state.checked = new Set();
-state.infoOpen = true;
+state.infoOpen = false;
 state.scopeAll = false;
 state.focused = false;
 state.returnView = 'gallery';
@@ -1974,7 +1985,14 @@ function renderPreview(id){
   pvZoom = 1;
   const custom = previewContentFor(f);
   if(f.live){
-    canvas.innerHTML = `<iframe class="pv-live" src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe>`;
+    liveComments=[];
+    if(f.type==='image'){
+      canvas.innerHTML = `<div class="pv-live-img" id="pvLiveImg"><div class="pv-img-loading">Loading…</div></div>`;
+      loadLiveImage(f);
+    } else {
+      canvas.innerHTML = `<iframe class="pv-live" src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe>`;
+      loadLiveComments(f);
+    }
     canvas.onscroll = null;
   } else if(f.type==='webapp'){
     canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Live app</span><iframe id="pvAppFrame" title="${f.short}" sandbox="allow-scripts"></iframe></div></div>`;
@@ -2069,7 +2087,7 @@ function setNavActive(name){
 }
 function renderNavFolders(){
   const box=document.getElementById('navMyDrive'); if(!box)return;
-  const list = state.live ? LIVE_FOLDERS : FOLDERS;
+  const list = state.live ? LIVE_FOLDERS : [];
   box.innerHTML=(list||[]).map(f=>{
     const key=state.live?f.id:f.name;
     return `<div class="nav-item" data-folder="${(f.name||'').replace(/"/g,'&quot;')}" draggable="true" ondragstart="dragItem(event,'folder','${key}')" onclick="openFolderNav('${key}')"><span class="ico">${folderIco16()}</span><span class="label">${f.name}</span>${state.live?'':'<span class="agent-dot"></span>'}</div>`;
@@ -2104,6 +2122,7 @@ function showLiveList(title, items){
   document.getElementById('crumbRoot').classList.remove('here');
   document.getElementById('crumbSep').style.display=''; const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=title;
   document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
+  setScopeChip(null);
   setView('list');
 }
 function newMenu(){
@@ -2112,22 +2131,30 @@ function newMenu(){
   fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:JSON.stringify({name:name,mimeType:'application/vnd.google-apps.folder'})})
     .then(r=>r.json()).then(()=>{ toast('Folder “'+name+'” created'); loadDriveRoot(); }).catch(e=>toast('Create failed: '+e.message));
 }
-function goMyDrive(){
-  state.level='mydrive'; closeInfo(); closeAgent();
+function driveLogoSvg(px){return `<svg width="${px}" height="${px*78/87.3}" viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>`;}
+function setScopeChip(name){
+  const chip=document.getElementById('scopeChip'), lbl=document.getElementById('scopeChipLabel');
+  if(!chip) return;
+  if(name){ chip.style.display=''; if(lbl) lbl.textContent=name; document.getElementById('search').classList.remove('broad'); }
+  else { chip.style.display='none'; }
+}
+function showConnectLanding(){
+  state.level='mydrive'; state.live=false; closeInfo(); closeAgent();
   document.querySelector('.stage-wrap').classList.add('ghost');
   const sc=document.getElementById('screen'); sc.classList.remove('ghost');
-  sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Folders — each with its own agents.</div>
-    <div class="md-connect"><div><b>Demo data.</b> Connect your real Google Drive to browse your actual files here.</div><button class="aabtn primary" onclick="connectDrive()"><svg width="14" height="14" viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg> Connect Google Drive</button></div>
-    <div class="md-grid">${FOLDERS.map(f=>`
-      <div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.name}')" onclick="enterFolder('${f.name}')">
-        <div class="md-fico">${folderIco()}</div>
-        <div><div class="md-fname">${f.name}</div>
-        <div class="md-fmeta">${f.items} items &nbsp;·&nbsp; ${f.agents.map(p=>agentMark(p,12)).join('')} ${f.agents.length} agent${f.agents.length>1?'s':''}</div></div>
-      </div>`).join('')}</div>`;
+  sc.innerHTML=`<div class="landing">
+    <div class="landing-logo">${driveLogoSvg(58)}</div>
+    <div class="landing-h">Welcome to Drive</div>
+    <div class="landing-sub">Connect your Google account to browse your real files and folders — with per-folder agents, anchored comments, and a live preview.</div>
+    <button class="aabtn primary landing-btn" onclick="connectDrive()">${driveLogoSvg(16)}&nbsp; Connect Google Drive</button>
+  </div>`;
   document.getElementById('crumbRoot').classList.add('here');
   document.getElementById('crumbSep').style.display='none';
   document.getElementById('folderCrumb').style.display='none';
-  setNavActive(null);
+  setNavActive(null); setScopeChip(null);
+}
+function goMyDrive(){
+  if(state.live){ renderMyDriveLive(); setScopeChip(null); } else { showConnectLanding(); }
 }
 function enterFolder(name){
   const f=FOLDERS.find(x=>x.name===name);
@@ -2169,12 +2196,10 @@ function setView(v){
     stage.classList.add('ghost','is-home');
     if(v==='gallery') renderGallery(); else renderCarousel();
     if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
-    else { if(!state.agentOpen) openInfo(); }           // gallery → folder activity
   }else{
     lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
     gallery.classList.add('ghost'); carousel.classList.add('ghost');
     stage.classList.remove('ghost','is-home');
-    if(!state.agentOpen && !state.infoOpen) openInfo();
     renderList();
     const vis=getVisibleFiles();
     const sel=(state.selected&&vis.some(f=>f.id===state.selected))?state.selected:(vis[0]&&vis[0].id);
@@ -2857,6 +2882,12 @@ function renderCommentPins(f){
     sheet.appendChild(pin);
   });
 }
+function focusLiveComment(id){
+  const pin=document.getElementById('pin-live-'+id); if(!pin) return;
+  pin.scrollIntoView({block:'center',behavior:'smooth'});
+  document.querySelectorAll('.cmt-pin.open').forEach(p=>p.classList.remove('open'));
+  pin.classList.add('open','pulse'); setTimeout(()=>pin.classList.remove('pulse'),1000);
+}
 function focusComment(fid,cid){
   const pin=document.getElementById('pin-'+fid+'-'+cid); if(!pin) return;
   pin.scrollIntoView({block:'center',behavior:'smooth'});
@@ -2864,6 +2895,12 @@ function focusComment(fid,cid){
   pin.classList.add('open','pulse'); setTimeout(()=>pin.classList.remove('pulse'),1000);
 }
 function docActivity(f){
+  if(f.live){
+    return [
+      {kind:'person', who:'You', when:0, title:'You', desc:'Opened this document.'},
+      {kind:'person', who:f.by||'Owner', when:f.added||0, title:f.by||'Owner', desc:(f.type==='image'?'Uploaded ':'Added ')+'“'+f.short+'”.'}
+    ];
+  }
   const credit = f.byAgent ? f.by : 'Claude agent';
   const ev=[];
   ev.push({kind:'person', who:'You', when:0, title:'You', desc:'Opened this document.'});
@@ -2886,14 +2923,19 @@ function renderInfo(){
     if(f){
       if(tEl) tEl.textContent='Document activity';
       if(sEl) sEl.textContent=f.short;
+      const cm = f.live
+        ? liveComments.map(c=>({id:c.id, author:(c.author&&c.author.displayName)||'Someone', color:'#1a73e8', text:c.content, live:true,
+            when: c.createdTime?Math.max(0,Math.round((Date.now()-new Date(c.createdTime).getTime())/864e5)):0}))
+        : (COMMENTS[f.id]||[]);
+      const addBtn = f.live ? `<button class="ipc-add" onclick="addCommentPlain()">+ Add</button>` : '';
+      const emptyMsg = f.live ? 'No comments yet — click the image to drop one, or use “+ Add”.' : 'No comments yet — click a spot on the document to add one.';
       document.getElementById('ipBody').innerHTML=`
-        ${(()=>{const cm=COMMENTS[f.id]||[];return `
-        <h4 class="ip-h" style="margin-bottom:12px">Comments <span style="color:var(--faint);font-weight:600">${cm.length}</span></h4>
-        ${cm.length? cm.map(c=>`<div class="ipc" onclick="focusComment('${f.id}','${c.id}')">
+        <h4 class="ip-h" style="margin-bottom:12px;display:flex;align-items:center;gap:8px">Comments <span style="color:var(--faint);font-weight:600">${cm.length}</span>${addBtn}</h4>
+        ${cm.length? cm.map(c=>`<div class="ipc" onclick="${c.live?`focusLiveComment('${c.id}')`:`focusComment('${f.id}','${c.id}')`}">
             <span class="ipc-av" style="background:${c.color}">${commentInitials(c)}</span>
             <div style="min-width:0"><div class="ipc-top"><b>${c.author}</b><span>${c.when===0?'today':dstr(daysAgo(c.when))}</span></div>
             <div class="ipc-txt">${c.text}</div></div></div>`).join('')
-          : '<div class="ipc-empty">No comments yet — click a spot on the document to add one.</div>'}`;})()}
+          : '<div class="ipc-empty">'+emptyMsg+'</div>'}
         <h4 class="ip-h" style="margin:20px 0 14px">Activity on this document</h4>
         <div class="feed">${feedHTMLfrom(docActivity(f))}</div>`;
     }
@@ -3140,9 +3182,63 @@ function openLiveFolder(id,name){
       const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
       document.getElementById('screen').classList.add('ghost');
       document.querySelector('.stage-wrap').classList.remove('ghost');
-      setNavActive(name);
+      setNavActive(name); setScopeChip(name);
       setView('list');
     }).catch(e=>toast('Could not open folder: '+e.message));
+}
+/* ---- live image (white viewer) + real Drive comments ---- */
+let liveComments=[], liveCommentFile=null;
+function loadLiveImage(f){
+  fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media',{headers:{Authorization:'Bearer '+driveToken}})
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
+    .then(b=>{ const url=URL.createObjectURL(b); const box=document.getElementById('pvLiveImg'); if(!box)return;
+      box.innerHTML=`<div class="pv-img-wrap" id="pvImgWrap"><img class="pv-img" id="pvImg" src="${url}" alt="${(f.short||'').replace(/"/g,'&quot;')}"></div>`;
+      box.onclick=(e)=>addCommentAt(e,f);
+      loadLiveComments(f);
+    }).catch(e=>{ const box=document.getElementById('pvLiveImg'); if(box) box.innerHTML='<div class="pv-img-loading">Could not load image ('+e.message+')</div>'; });
+}
+function loadLiveComments(f){
+  liveComments=[]; liveCommentFile=f;
+  driveApi('files/'+f.id+'/comments?fields=comments(id,content,author(displayName,me),anchor,createdTime,resolved)&pageSize=100')
+    .then(res=>{ liveComments=(res.comments||[]).filter(c=>!c.resolved); renderLiveCommentChips(); if(state.selected===f.id) renderInfo(); })
+    .catch(()=>{ liveComments=[]; if(state.selected===f.id) renderInfo(); });
+}
+function commentXY(c){ try{ const a=JSON.parse(c.anchor); if(typeof a.x==='number') return a; }catch(e){} return null; }
+function renderLiveCommentChips(){
+  const box=document.getElementById('pvImgWrap'); if(!box) return;
+  box.querySelectorAll('.cmt-pin').forEach(p=>p.remove());
+  liveComments.forEach(c=>{
+    const xy=commentXY(c); if(!xy) return;
+    const pin=document.createElement('button');
+    pin.className='cmt-pin'+(xy.x>52?' flip':'')+(xy.y<22?' down':'');
+    pin.id='pin-live-'+c.id;
+    pin.style.left=xy.x+'%'; pin.style.top=xy.y+'%'; pin.style.setProperty('--c','#1a73e8');
+    const who=(c.author&&c.author.displayName)||'Someone';
+    pin.innerHTML=`<span class="cmt-dot">${who.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</span><span class="cmt-bub"><b>${who}</b>${c.content}</span>`;
+    pin.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.cmt-pin.open').forEach(p=>{if(p!==pin)p.classList.remove('open');}); pin.classList.toggle('open'); };
+    box.appendChild(pin);
+  });
+}
+function addCommentAt(e,f){
+  if(e.target.closest('.cmt-pin')) return;
+  const img=document.getElementById('pvImg'); if(!img) return;
+  const r=img.getBoundingClientRect();
+  const x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
+  if(x<0||x>100||y<0||y>100) return;
+  const text=prompt('Add a comment'); if(!text) return;
+  postComment(f, text, {x:Math.round(x),y:Math.round(y)});
+}
+function addCommentPlain(){
+  if(!liveCommentFile){ return; }
+  const text=prompt('Add a comment'); if(!text) return;
+  postComment(liveCommentFile, text, null);
+}
+function postComment(f,text,anchor){
+  const body={content:text}; if(anchor) body.anchor=JSON.stringify(anchor);
+  fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'/comments?fields=id',
+    {method:'POST',headers:{Authorization:'Bearer '+driveToken,'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(()=>{ toast('Comment added'); loadLiveComments(f); }).catch(err=>toast('Comment failed: '+err.message));
 }
 function liveThumb(f,cls){
   const big=cls==='gallery';
@@ -3195,16 +3291,8 @@ function moveCur(i){
 renderPresence();
 renderRoster();
 renderDrawerHead();
-renderOpenItems(); renderTasks(); renderPins(); renderNavFolders();
-renderPvPresence(); initCursors();
-renderList(); renderFeeds(); renderInfo();
-const _p=new URLSearchParams(location.search), _v=_p.get('v'), _sel=_p.get('sel');
-if(_v){ setView(_v); } else { setView('list'); selectFile('index'); }
-if(_sel){ setView('list'); selectFile(_sel); }
-if(_p.get('info')==='0'){ toggleInfo(); }
-if(_p.get('panel')==='agents'){ openAgent(_p.get('tab')||undefined); }
-if(_p.get('screen')==='mydrive'){ goMyDrive(); }
-if(_p.get('focus')){ setView('gallery'); openFocused(_p.get('focus')); }
+renderTasks(); renderPins(); renderNavFolders();
+showConnectLanding();   // no demo data — connect to load real Drive
 </script>
 </body>
 </html>
