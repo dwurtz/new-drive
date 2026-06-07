@@ -1063,7 +1063,7 @@ svg{display:block}
         <!-- info / activity panel (with vertical time scrubber) -->
         <div class="infopanel open" id="infopanel">
           <div class="ip-head">
-            <div><div class="ip-title">Folder activity</div><div class="ip-sub">Who did what in Estate docs</div></div>
+            <div><div class="ip-title" id="ipTitle">Folder activity</div><div class="ip-sub" id="ipSub">Who did what in Estate docs</div></div>
             <button class="tbtn" onclick="toggleInfo()" title="Hide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           </div>
           <div class="ip-body" id="ipBody"></div>
@@ -1910,6 +1910,7 @@ function renderPreview(id){
 
   renderDetails(f);
   refreshChatSuggestions();
+  renderInfo();   // right panel → this document's activity
 }
 /* list-view selection: keep the browsable list on the left */
 function selectFile(id){
@@ -1969,10 +1970,13 @@ function setView(v){
     carousel.classList.toggle('ghost', v!=='carousel');
     stage.classList.add('ghost','is-home');
     if(v==='gallery') renderGallery(); else renderCarousel();
+    if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
+    else { if(!state.agentOpen) openInfo(); }           // gallery → folder activity
   }else{
     lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
     gallery.classList.add('ghost'); carousel.classList.add('ghost');
     stage.classList.remove('ghost','is-home');
+    if(!state.agentOpen && !state.infoOpen) openInfo();
     renderList();
     const vis=getVisibleFiles();
     const sel=(state.selected&&vis.some(f=>f.id===state.selected))?state.selected:(vis[0]&&vis[0].id);
@@ -2616,8 +2620,45 @@ function vtlRowHTML(a,i,idx){
     <div class="vtl-desc">${a.desc}</div>
   </div>`;
 }
+function docActivity(f){
+  const credit = f.byAgent ? f.by : 'Claude agent';
+  const ev=[];
+  ev.push({kind:'person', who:'You', when:0, title:'You', desc:'Opened this document.'});
+  if(f.note) ev.push({kind:'agent', who:credit, when:0, title:credit, desc:f.note});
+  if(f.byAgent) ev.push({kind:'agent', who:f.by, when:f.added, title:f.by, desc:'Created “'+f.short+'” in this folder.', source:f.from});
+  else ev.push({kind:'person', who:f.by, when:f.added, title:f.by, desc:(f.type==='image'?'Uploaded ':'Added ')+'“'+f.short+'”.', source:f.from});
+  if(!f.byAgent && /will|trust|attorney|directive|hipaa|assignment|authoriz|certification/i.test(f.short))
+    ev.push({kind:'agent', who:'Claude agent', when:Math.max(f.added-1,0), title:'Claude agent', desc:'Reviewed against current Arizona statute.'});
+  ev.push({kind:'agent', who:'Gemini agent', when:f.added, title:'Gemini agent', desc:'Filed into Estate docs and named to your convention.'});
+  const seen=new Set();
+  return ev.filter(e=>{const k=e.title+'|'+e.desc; if(seen.has(k))return false; seen.add(k); return true;})
+           .sort((a,b)=>a.when-b.when);
+}
 function renderInfo(){
   if(!state.infoOpen) return;
+  const tEl=document.getElementById('ipTitle'), sEl=document.getElementById('ipSub');
+  // ----- DOCUMENT mode: a file is open -----
+  if(state.selected){
+    const f=FILES.find(x=>x.id===state.selected);
+    if(f){
+      if(tEl) tEl.textContent='Document activity';
+      if(sEl) sEl.textContent=f.short;
+      const TL={brief:'PDF',doc:'PDF',pdf:'PDF',image:'JPEG image',sheet:'Google Sheet',gdoc:'Google Doc',webapp:'Web app'};
+      document.getElementById('ipBody').innerHTML=`
+        <div class="ip-stats">
+          <div class="ip-stat"><div class="k">Type</div><div class="v">${TL[f.type]||'PDF'}</div></div>
+          <div class="ip-stat"><div class="k">Owner</div><div class="v">${f.by}</div></div>
+          <div class="ip-stat"><div class="k">Modified</div><div class="v">${dstr(daysAgo(f.added))}</div></div>
+          <div class="ip-stat"><div class="k">Size</div><div class="v">${f.size||'—'}</div></div>
+        </div>
+        <h4 class="ip-h" style="margin-bottom:14px">Activity on this document</h4>
+        <div class="feed">${feedHTMLfrom(docActivity(f))}</div>`;
+    }
+    return;
+  }
+  // ----- FOLDER mode -----
+  if(tEl) tEl.textContent='Folder activity';
+  if(sEl) sEl.textContent='Who did what in Estate docs';
   const vis=getVisibleFiles().length;
   const idx=asOfIndex();
   const label=state.asOf===0?'Today':daysAgo(state.asOf).toLocaleDateString('en-US',{month:'long',day:'numeric'});
