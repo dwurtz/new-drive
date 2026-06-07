@@ -222,6 +222,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .sort-menu button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);text-align:left}
 .sort-menu button:hover{background:var(--hover)}
 .sort-menu .sm-dir{margin-left:auto;color:var(--accent);font-size:10px}
+.nav-sub{padding-left:14px}
+.app.rail-collapsed .nav-sub{padding-left:0}
 .lp-list{flex:1;overflow-y:auto;padding:0 8px 12px}
 .lp-list::-webkit-scrollbar{width:9px}
 .lp-list::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
@@ -1002,8 +1004,8 @@ svg{display:block}
     </div>
 
     <div class="nav-group">
-      <div class="nav-label">My Drive</div>
-      <div id="navMyDrive"></div>
+      <div class="nav-item" data-nav="mydrive" onclick="goMyDrive()"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">My Drive</span></div>
+      <div id="navMyDrive" class="nav-sub"></div>
     </div>
 
     <div class="nav-group" id="pinGroup">
@@ -3231,6 +3233,7 @@ function openLiveFolder(id,name){
         document.getElementById('crumbSep').style.display='none';
         document.getElementById('folderCrumb').style.display='none';
         setNavActive(null); setScopeChip(null);
+        document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav==='mydrive'));
       } else {
         state.level='folder';
         document.getElementById('crumbRoot').classList.remove('here');
@@ -3248,7 +3251,7 @@ let liveComments=[], liveCommentFile=null;
 function loadLiveImage(f){
   fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media',{headers:{Authorization:'Bearer '+driveToken}})
     .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
-    .then(b=>{ const url=URL.createObjectURL(b); const box=document.getElementById('pvLiveImg'); if(!box)return;
+    .then(b=>{ if(state.selected!==f.id) return; const url=URL.createObjectURL(b); const box=document.getElementById('pvLiveImg'); if(!box)return;
       box.innerHTML=`<div class="pv-img-wrap" id="pvImgWrap"><img class="pv-img" id="pvImg" src="${url}" alt="${(f.short||'').replace(/"/g,'&quot;')}"></div>`;
       box.onclick=(e)=>addCommentAt(e,f);
       loadLiveComments(f);
@@ -3305,11 +3308,12 @@ function loadLivePdf(f){
   fetch(liveDocUrl(f),{headers:{Authorization:'Bearer '+driveToken}})
     .then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
     .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
-    .then(pdf=>renderPdf(pdf,f))
-    .then(()=>loadLiveComments(f))
-    .catch(e=>{ if(box) box.innerHTML='<div class="pv-img-loading">Could not render document ('+e.message+')</div>'; });
+    .then(pdf=>{ if(state.selected!==f.id) return; return renderPdf(pdf,f); })
+    .then(()=>{ if(state.selected===f.id) loadLiveComments(f); })
+    .catch(e=>{ if(state.selected===f.id){ const b2=document.getElementById('pvLiveDoc'); if(b2) b2.innerHTML='<div class="pv-img-loading">Could not render document ('+e.message+')</div>'; } });
 }
 function renderPdf(pdf,f){
+  if(state.selected!==f.id) return Promise.resolve();
   const box=document.getElementById('pvLiveDoc'); if(!box) return Promise.resolve();
   box.innerHTML='';
   const targetW=Math.min(820, (box.clientWidth||820)-56);
