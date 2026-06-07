@@ -876,6 +876,36 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .cf-nav:hover{background:var(--hover)}
 .cf-nav.prev{left:22px}.cf-nav.next{right:22px}
 
+.app.in-carousel #infoBtn{display:none}
+/* anchored comment pins + bubbles */
+.cmt-pin{position:absolute;transform:translate(-3px,-100%);z-index:7;cursor:pointer;border:none;background:none;padding:0;line-height:0}
+.cmt-dot{display:flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50% 50% 50% 3px;background:var(--c);color:#fff;font-size:10px;font-weight:700;box-shadow:0 2px 7px rgba(0,0,0,.32);border:2px solid #fff}
+.cmt-bub{display:none;position:absolute;left:32px;top:-4px;width:210px;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow-lg);padding:11px 13px;font-size:12.5px;line-height:1.5;color:var(--ink);text-align:left;z-index:8;white-space:normal}
+.cmt-bub b{display:block;font-size:12px;margin-bottom:4px}
+.cmt-pin:hover .cmt-bub,.cmt-pin.open .cmt-bub{display:block}
+.cmt-pin.pulse .cmt-dot{animation:cpulse 1s var(--ease)}
+@keyframes cpulse{0%{box-shadow:0 0 0 0 var(--c)}100%{box-shadow:0 0 0 16px transparent}}
+/* comment list in info panel */
+.ipc{display:flex;gap:10px;padding:10px 4px;cursor:pointer;border-radius:9px}
+.ipc:hover{background:var(--hover)}
+.ipc-av{width:25px;height:25px;border-radius:50%;flex:none;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+.ipc-top{display:flex;align-items:baseline;gap:8px}
+.ipc-top b{font-size:13px}
+.ipc-top span{font-size:11px;color:var(--faint);font-family:"JetBrains Mono",monospace}
+.ipc-txt{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+.ipc-empty{color:var(--faint);font-size:13px;padding:4px 0 10px;line-height:1.5}
+/* My Drive screen (breadcrumb navigation) */
+.screen{flex:1;min-width:0;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow-y:auto;padding:34px 42px}
+.md-h{font-family:"Fraunces",serif;font-size:34px;font-weight:600;letter-spacing:-.02em;margin-bottom:5px}
+.md-sub{color:var(--muted);font-size:14px;margin-bottom:28px}
+.md-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:16px;max-width:1100px}
+.md-folder{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;transition:.18s var(--ease)}
+.md-folder:hover{box-shadow:var(--shadow-md);border-color:var(--line-2);transform:translateY(-2px)}
+.md-fico{width:46px;height:46px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:none}
+.md-fname{font-weight:600;font-size:15px}
+.md-fmeta{font-size:12px;color:var(--faint);margin-top:3px;display:flex;align-items:center;gap:4px}
+.md-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--faint);text-align:center;gap:12px;line-height:1.6}
+.md-empty svg{opacity:.5}
 svg{display:block}
 .ghost{display:none!important}
 </style>
@@ -924,10 +954,10 @@ svg{display:block}
 
     <div class="nav-group">
       <div class="nav-label">My Drive</div>
-      <div class="nav-item active"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
-      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
+      <div class="nav-item active" data-folder="Estate docs" onclick="enterFolder('Estate docs')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
+      <div class="nav-item" data-folder="School decision" onclick="enterFolder('School decision')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
+      <div class="nav-item" data-folder="Home renovation" onclick="enterFolder('Home renovation')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
+      <div class="nav-item" data-folder="Taxes 2025" onclick="enterFolder('Taxes 2025')"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
     </div>
 
     <div class="nav-group">
@@ -946,8 +976,8 @@ svg{display:block}
   <div class="main">
     <div class="toolbar">
       <div class="crumbs">
-        <span class="crumb">My Drive</span>
-        <span class="crumb-sep">›</span>
+        <span class="crumb" id="crumbRoot" onclick="goMyDrive()">My Drive</span>
+        <span class="crumb-sep" id="crumbSep">›</span>
         <span class="crumb here" id="folderCrumb">Estate docs</span>
       </div>
       <div class="search" id="search">
@@ -985,6 +1015,7 @@ svg{display:block}
     </div>
 
     <div class="body">
+      <div class="screen ghost" id="screen"></div>
       <div class="stage-wrap">
 
         <!-- list pane -->
@@ -1217,11 +1248,23 @@ const FILE_BRIEF = {
 };
 const FILE_IMAGE = {
   id:'sigphoto', name:'IMG_4127_Executed_Signature_Page.jpg',
-  short:'Executed Signature Page (photo)', type:'image', ext:'JPG',
+  short:'Executed Signature Page (photo)', type:'image', ext:'JPG', imgKind:'signature',
   title:['EXECUTED','SIGNATURE PAGE','(PHOTO)'],
   head:'Photo · notarized signature & seal',
   added:2, by:'David Wurtz', byAgent:false, size:'3.4 MB',
   note:'The photo David took of the notarized signature page. The Gemini agent read the seal and confirmed it matches the executed Last Will & Testament.'
+};
+const FILE_IMG_PROPERTY = {
+  id:'home-photo', name:'IMG_4210_Flagstaff_Home.jpg',
+  short:'Flagstaff Home — front (photo)', type:'image', ext:'JPG', imgKind:'property',
+  title:['FLAGSTAFF','HOME','(PHOTO)'], head:'Photo · 2nd-home property',
+  added:6, by:'Dominique Igoe', byAgent:false, size:'4.1 MB',
+  note:'Photo of the Flagstaff residence — the 2nd-home asset still showing “Pending” in the inventory.'
+};
+const FILE_DEED = {
+  id:'deed', name:'WURTZ_IGOE_Warranty_Deed_Flagstaff.pdf', short:'Warranty Deed — Flagstaff', type:'doc', ext:'PDF',
+  title:['WARRANTY DEED','—','FLAGSTAFF RESIDENCE'], head:'Recorded · Coconino County',
+  added:7, by:'Michael Igoe', byAgent:false, size:'520 KB', note:''
 };
 const FILE_SHEET = {
   id:'inventory', name:'Asset_and_Beneficiary_Inventory', short:'Asset & Beneficiary Inventory',
@@ -1309,7 +1352,7 @@ const FILE_WEBAPP = {
   title:['ESTATE','READINESS'], head:'Web app · runs live in preview', added:0, by:'Gemini agent', byAgent:true, size:'22 KB',
   app: ESTATE_APP
 };
-FILES.splice(1, 0, FILE_WEBAPP, FILE_BRIEF, FILE_GDOC2, FILE_GSHEET, FILE_SHEET, FILE_IMAGE, FILE_GDOC1);
+FILES.splice(1, 0, FILE_WEBAPP, FILE_BRIEF, FILE_GDOC2, FILE_GSHEET, FILE_SHEET, FILE_IMAGE, FILE_IMG_PROPERTY, FILE_DEED, FILE_GDOC1);
 
 const ACTIVITY = [
   {kind:'agent', who:'Gemini agent', when:0, title:'Gemini agent',
@@ -1332,6 +1375,7 @@ state.infoOpen = true;
 state.scopeAll = false;
 state.focused = false;
 state.returnView = 'gallery';
+state.level = 'folder';
 let _lastCheckedId = null;
 
 /* ============ provenance (workspace feature) ============ */
@@ -1423,6 +1467,7 @@ function thumbBrief(f){
   </div>`;
 }
 function thumbImage(f){
+  if(f.imgKind==='property') return propertyScene();
   return `<div class="ct-image">
     <div class="ph-paper"></div>
     <svg class="ph-ink" viewBox="0 0 200 50" preserveAspectRatio="none">
@@ -1724,7 +1769,24 @@ function previewBrief(f){
     <p style="color:#80868b;font-size:11px;margin-top:14px">Drafted automatically. Citations verified against current Arizona statute.</p>
   </div>`;
 }
+function propertyScene(){
+  return '<div class="ct-image" style="background:#bfe3fb;overflow:hidden">'
+    +'<svg viewBox="0 0 100 130" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">'
+    +'<rect width="100" height="130" fill="#bfe3fb"/>'
+    +'<circle cx="80" cy="20" r="9" fill="#ffe08a"/>'
+    +'<rect y="84" width="100" height="46" fill="#cbe6ad"/>'
+    +'<polygon points="50,42 86,68 14,68" fill="#7a4b34"/>'
+    +'<rect x="24" y="68" width="52" height="34" fill="#dcb98e"/>'
+    +'<rect x="45" y="84" width="11" height="18" fill="#6b4327"/>'
+    +'<rect x="30" y="74" width="10" height="9" fill="#bfe3fb" stroke="#fff" stroke-width="0.8"/>'
+    +'<rect x="60" y="74" width="10" height="9" fill="#bfe3fb" stroke="#fff" stroke-width="0.8"/>'
+    +'<rect x="9" y="58" width="4" height="26" fill="#6b4a2b"/><circle cx="11" cy="54" r="10" fill="#5fa463"/>'
+    +'</svg>'
+    +'<div style="position:absolute;left:5%;bottom:5%;background:rgba(0,0,0,.45);color:#fff;padding:3px 9px;border-radius:6px;font-size:12px">Flagstaff residence · Jun 6, 2026</div>'
+    +'</div>';
+}
 function previewImage(f){
+  if(f.imgKind==='property') return propertyScene();
   return `<div class="ct-image">
     <div class="ph-paper"></div>
     <svg class="ph-ink" viewBox="0 0 200 50" preserveAspectRatio="none">
@@ -1907,6 +1969,7 @@ function renderPreview(id){
     };
   }
   pvApplyZoom();
+  if(f.type!=='webapp') renderCommentPins(f);
 
   renderDetails(f);
   refreshChatSuggestions();
@@ -1955,9 +2018,58 @@ function renderDetails(f){
 /* ============ view switch ============ */
 document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setView(b.dataset.view);});
 const carousel=document.getElementById('carousel');
+/* ============ breadcrumb navigation (My Drive ↔ folders) ============ */
+const FOLDERS=[
+  {name:'Estate docs', items:19, agents:['gemini','claude'], populated:true},
+  {name:'School decision', items:3, agents:['gemini'], populated:false},
+  {name:'Home renovation', items:8, agents:['gemini'], populated:false},
+  {name:'Taxes 2025', items:24, agents:['claude'], populated:false},
+];
+function folderIco(){return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>';}
+function setNavActive(name){ document.querySelectorAll('.nav-item[data-folder]').forEach(n=>n.classList.toggle('active', n.dataset.folder===name)); }
+function goMyDrive(){
+  state.level='mydrive'; closeInfo(); closeAgent();
+  document.querySelector('.stage-wrap').classList.add('ghost');
+  const sc=document.getElementById('screen'); sc.classList.remove('ghost');
+  sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Folders — each with its own agents.</div>
+    <div class="md-grid">${FOLDERS.map(f=>`
+      <div class="md-folder" onclick="enterFolder('${f.name}')">
+        <div class="md-fico">${folderIco()}</div>
+        <div><div class="md-fname">${f.name}</div>
+        <div class="md-fmeta">${f.items} items &nbsp;·&nbsp; ${f.agents.map(p=>agentMark(p,12)).join('')} ${f.agents.length} agent${f.agents.length>1?'s':''}</div></div>
+      </div>`).join('')}</div>`;
+  document.getElementById('crumbRoot').classList.add('here');
+  document.getElementById('crumbSep').style.display='none';
+  document.getElementById('folderCrumb').style.display='none';
+  setNavActive(null);
+}
+function enterFolder(name){
+  const f=FOLDERS.find(x=>x.name===name);
+  document.getElementById('crumbRoot').classList.remove('here');
+  document.getElementById('crumbSep').style.display='';
+  const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name;
+  setNavActive(name);
+  if(f && f.populated){
+    state.level='folder';
+    document.getElementById('screen').classList.add('ghost');
+    document.querySelector('.stage-wrap').classList.remove('ghost');
+    setView(state.view||'list');
+  } else {
+    state.level='empty'; closeInfo(); closeAgent();
+    document.querySelector('.stage-wrap').classList.add('ghost');
+    const sc=document.getElementById('screen'); sc.classList.remove('ghost');
+    sc.innerHTML=`<div class="md-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <div style="font-family:'Fraunces',serif;font-size:23px;font-weight:600;color:var(--ink)">${name}</div>
+      <div>This folder is empty in the prototype.<br>Only <b>Estate docs</b> is populated.</div>
+      <button class="aabtn" style="margin-top:6px" onclick="enterFolder('Estate docs')">Open Estate docs</button>
+    </div>`;
+  }
+}
 function setView(v){
   state.view=v;
   state.focused=false;
+  document.getElementById('app').classList.toggle('in-carousel', v==='carousel');
   document.getElementById('listpane').classList.remove('collapsed');
   document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
@@ -2620,6 +2732,47 @@ function vtlRowHTML(a,i,idx){
     <div class="vtl-desc">${a.desc}</div>
   </div>`;
 }
+/* ============ anchored comments (Figma / Docs style) ============ */
+const COMMENTS = {
+  'will-d':[
+    {id:'c1', author:'Michael Igoe', color:'#d93025', x:50, y:33, text:'Confirm the witness names match the notary log before we file this.', when:2},
+    {id:'c2', author:'Dominique', color:'#1a73e8', x:30, y:78, text:'Should we name a successor executor in this article?', when:1}
+  ],
+  'sigphoto':[
+    {id:'c1', author:'Gemini agent', color:'claude', x:78, y:74, text:'Seal verified — the Arizona notary commission is current through 2027.', when:2, agent:'gemini'},
+    {id:'c2', author:'Michael Igoe', color:'#d93025', x:32, y:64, text:'Signature matches the executed will draft.', when:2}
+  ],
+  'brief':[
+    {id:'c1', author:'Claude agent', color:'#D97757', x:50, y:34, text:'This recommendation is the one real blocker — clearing the HIPAA gap resolves it.', when:0, agent:'claude'}
+  ],
+  'wishes':[
+    {id:'c1', author:'Dominique', color:'#1a73e8', x:26, y:44, text:'Love this. Could we name the two schools explicitly here?', when:1}
+  ],
+  'home-photo':[
+    {id:'c1', author:'Dominique', color:'#1a73e8', x:50, y:62, text:'This is the property still pending retitling into the trust.', when:6},
+    {id:'c2', author:'Claude agent', color:'#D97757', x:74, y:30, text:'Deed is recorded — see the Warranty Deed in this folder.', when:5, agent:'claude'}
+  ]
+};
+function commentInitials(c){ return (c.author||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function renderCommentPins(f){
+  const list=COMMENTS[f.id]; if(!list) return;
+  const sheets=document.querySelectorAll('.pv-canvas .pv-sheet');
+  list.forEach(c=>{
+    const sheet=sheets[c.page||0]||sheets[0]; if(!sheet) return;
+    const pin=document.createElement('button');
+    pin.className='cmt-pin'; pin.id='pin-'+f.id+'-'+c.id;
+    pin.style.left=c.x+'%'; pin.style.top=c.y+'%'; pin.style.setProperty('--c', c.color);
+    pin.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.cmt-pin.open').forEach(p=>{if(p!==pin)p.classList.remove('open');}); pin.classList.toggle('open'); };
+    pin.innerHTML=`<span class="cmt-dot">${commentInitials(c)}</span><span class="cmt-bub"><b>${c.author}</b>${c.text}</span>`;
+    sheet.appendChild(pin);
+  });
+}
+function focusComment(fid,cid){
+  const pin=document.getElementById('pin-'+fid+'-'+cid); if(!pin) return;
+  pin.scrollIntoView({block:'center',behavior:'smooth'});
+  document.querySelectorAll('.cmt-pin.open').forEach(p=>p.classList.remove('open'));
+  pin.classList.add('open','pulse'); setTimeout(()=>pin.classList.remove('pulse'),1000);
+}
 function docActivity(f){
   const credit = f.byAgent ? f.by : 'Claude agent';
   const ev=[];
@@ -2651,7 +2804,14 @@ function renderInfo(){
           <div class="ip-stat"><div class="k">Modified</div><div class="v">${dstr(daysAgo(f.added))}</div></div>
           <div class="ip-stat"><div class="k">Size</div><div class="v">${f.size||'—'}</div></div>
         </div>
-        <h4 class="ip-h" style="margin-bottom:14px">Activity on this document</h4>
+        ${(()=>{const cm=COMMENTS[f.id]||[];return `
+        <h4 class="ip-h" style="margin-bottom:12px">Comments <span style="color:var(--faint);font-weight:600">${cm.length}</span></h4>
+        ${cm.length? cm.map(c=>`<div class="ipc" onclick="focusComment('${f.id}','${c.id}')">
+            <span class="ipc-av" style="background:${c.color}">${commentInitials(c)}</span>
+            <div style="min-width:0"><div class="ipc-top"><b>${c.author}</b><span>${c.when===0?'today':dstr(daysAgo(c.when))}</span></div>
+            <div class="ipc-txt">${c.text}</div></div></div>`).join('')
+          : '<div class="ipc-empty">No comments yet — click a spot on the document to add one.</div>'}`;})()}
+        <h4 class="ip-h" style="margin:20px 0 14px">Activity on this document</h4>
         <div class="feed">${feedHTMLfrom(docActivity(f))}</div>`;
     }
     return;
@@ -2718,6 +2878,7 @@ function closeInfo(){
   document.getElementById('infoBtn').classList.remove('on');
 }
 function openInfo(){
+  if(state.view==='carousel') return;   // immersive: no right panel in carousel
   if(typeof closeAgent==='function' && state.agentOpen) closeAgent();  // share the right slot
   state.infoOpen=true;
   document.getElementById('infopanel').classList.add('open');
@@ -2813,6 +2974,7 @@ if(_v){ setView(_v); } else { setView('list'); selectFile('index'); }
 if(_sel){ setView('list'); selectFile(_sel); }
 if(_p.get('info')==='0'){ toggleInfo(); }
 if(_p.get('panel')==='agents'){ openAgent(_p.get('tab')||undefined); }
+if(_p.get('screen')==='mydrive'){ goMyDrive(); }
 if(_p.get('focus')){ setView('gallery'); openFocused(_p.get('focus')); }
 </script>
 </body>
