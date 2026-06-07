@@ -2127,12 +2127,8 @@ function setNavActive(name){
   if(name) document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.remove('active'));
 }
 function renderNavFolders(){
-  const box=document.getElementById('navMyDrive'); if(!box)return;
-  const list = state.live ? LIVE_FOLDERS : [];
-  box.innerHTML=(list||[]).map(f=>{
-    const key=state.live?f.id:f.name;
-    return `<div class="nav-item" data-folder="${(f.name||'').replace(/"/g,'&quot;')}" draggable="true" ondragstart="dragItem(event,'folder','${key}')" onclick="openFolderNav('${key}')"><span class="ico">${folderIco16()}</span><span class="label">${f.name}</span>${state.live?'':'<span class="agent-dot"></span>'}</div>`;
-  }).join('') || '<div class="pin-empty">No folders</div>';
+  // Root folders render in the content pane (not the sidebar). Keep the sidebar minimal.
+  const box=document.getElementById('navMyDrive'); if(box) box.innerHTML='';
 }
 function openFolderNav(key){
   let name;
