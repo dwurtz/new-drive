@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#ffffff;
@@ -919,6 +920,20 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .md-fmeta{font-size:12px;color:var(--faint);margin-top:3px;display:flex;align-items:center;gap:4px}
 .md-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--faint);text-align:center;gap:12px;line-height:1.6}
 .md-empty svg{opacity:.5}
+.md-connect{display:flex;align-items:center;gap:16px;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin-bottom:24px;max-width:1100px;font-size:14px;color:var(--muted)}
+.md-connect b{color:var(--ink)}
+.md-connect .aabtn{flex:none;white-space:nowrap}
+.dlg-wrap{position:fixed;inset:0;background:rgba(32,33,36,.45);display:none;place-items:center;z-index:300;backdrop-filter:blur(2px)}
+.dlg-wrap.open{display:grid}
+.dlg{background:#fff;border-radius:18px;padding:26px 28px;width:min(540px,92vw);box-shadow:var(--shadow-lg)}
+.dlg-h{font-family:"Fraunces",serif;font-size:21px;font-weight:600;margin-bottom:16px}
+.dlg-steps{margin:0 0 18px 18px;font-size:13px;line-height:1.8;color:var(--muted)}
+.dlg-steps code{background:var(--surface-2);padding:1px 6px;border-radius:5px;font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--ink)}
+.dlg-steps a{color:var(--accent);font-weight:600}
+.dlg-steps b{color:var(--ink)}
+#driveCidInput{width:100%;padding:11px 13px;border:1px solid var(--line-2);border-radius:11px;font-family:"JetBrains Mono",monospace;font-size:12px;margin-bottom:16px;outline:none}
+#driveCidInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.dlg-act{display:flex;justify-content:flex-end;gap:8px}
 svg{display:block}
 .ghost{display:none!important}
 </style>
@@ -1423,6 +1438,7 @@ const fileList = document.getElementById('fileList');
 function isFuture(f){ return f.added < state.asOf; }
 function renderThumb(f, variant){
   variant = variant || 'list';
+  if(f.live) return liveThumb(f, variant);
   const cls = variant==='gallery' ? 'gthumb' : 'fthumb';
   let inner;
   switch(f.type){
@@ -1959,7 +1975,10 @@ function renderPreview(id){
   const canvas = document.querySelector('.pv-canvas');
   pvZoom = 1;
   const custom = previewContentFor(f);
-  if(f.type==='webapp'){
+  if(f.live){
+    canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Google Drive</span><iframe src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe></div></div>`;
+    canvas.onscroll = null;
+  } else if(f.type==='webapp'){
     canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Live app</span><iframe id="pvAppFrame" title="${f.short}" sandbox="allow-scripts"></iframe></div></div>`;
     const fr=document.getElementById('pvAppFrame'); if(fr) fr.srcdoc=f.app;
     canvas.onscroll = null;
@@ -2052,6 +2071,7 @@ function goMyDrive(){
   document.querySelector('.stage-wrap').classList.add('ghost');
   const sc=document.getElementById('screen'); sc.classList.remove('ghost');
   sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Folders — each with its own agents.</div>
+    <div class="md-connect"><div><b>Demo data.</b> Connect your real Google Drive to browse your actual files here.</div><button class="aabtn primary" onclick="connectDrive()"><svg width="14" height="14" viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg> Connect Google Drive</button></div>
     <div class="md-grid">${FOLDERS.map(f=>`
       <div class="md-folder" onclick="enterFolder('${f.name}')">
         <div class="md-fico">${folderIco()}</div>
@@ -2291,7 +2311,7 @@ document.getElementById('gearBtn').addEventListener('click', e=>{
   gearMenu.style.right = (window.innerWidth - r.right) + 'px';
   gearMenu.classList.toggle('open');
 });
-document.getElementById('acctBtn').addEventListener('click', ()=> toast('David Wurtz · david@davidwurtz.com'));
+document.getElementById('acctBtn').addEventListener('click', connectDrive);
 
 /* ============ MULTI-AGENT: roster data ============ */
 const AGENTS = [
@@ -3000,6 +3020,94 @@ function toast(msg){
 }
 
 /* ============ init ============ */
+/* ============ Google Drive — real OAuth connection ============ */
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
+let driveToken=null, driveTokenClient=null, LIVE_FOLDERS=[];
+function driveClientId(){ return localStorage.getItem('gdrive_client_id')||''; }
+function connectDrive(){
+  const cid=driveClientId();
+  if(!cid){ showDriveSetup(); return; }
+  if(!(window.google&&google.accounts&&google.accounts.oauth2)){ toast('Google sign-in is still loading — try again in a second'); return; }
+  driveTokenClient=google.accounts.oauth2.initTokenClient({ client_id:cid, scope:DRIVE_SCOPE,
+    callback:(r)=>{ if(r&&r.access_token){ driveToken=r.access_token; state.live=true; toast('Connected to Google Drive'); loadDriveRoot(); } else { toast('Sign-in cancelled'); } },
+    error_callback:(e)=>toast('Sign-in error: '+(e&&e.type||'failed')) });
+  driveTokenClient.requestAccessToken({prompt: driveToken?'':'consent'});
+}
+function driveApi(path){
+  return fetch('https://www.googleapis.com/drive/v3/'+path,{headers:{Authorization:'Bearer '+driveToken}})
+    .then(r=>{ if(r.status===401){ driveToken=null; throw new Error('session expired — reconnect'); } if(!r.ok) throw new Error('Drive '+r.status); return r.json(); });
+}
+function mimeKind(m){
+  if(m==='application/vnd.google-apps.folder') return 'folder';
+  if(m==='application/vnd.google-apps.document') return 'gdoc';
+  if(m==='application/vnd.google-apps.spreadsheet') return 'sheet';
+  if(m==='application/pdf') return 'doc';
+  if(/^image\//.test(m)) return 'image';
+  return 'doc';
+}
+function mapDriveFile(d){
+  const days=Math.max(0,Math.round((Date.now()-new Date(d.modifiedTime||Date.now()).getTime())/864e5));
+  return { id:d.id, name:d.name, short:d.name, type:mimeKind(d.mimeType), ext:(d.fileExtension||({gdoc:'doc',sheet:'sheet',image:'img'}[mimeKind(d.mimeType)]||'pdf')).toUpperCase().slice(0,5),
+    by:(d.owners&&d.owners[0]&&d.owners[0].displayName)||'Me', byAgent:false, added:days,
+    size:d.size?(Math.round(d.size/1024)+' KB'):'—', live:true, mimeRaw:d.mimeType,
+    previewUrl:'https://drive.google.com/file/d/'+d.id+'/preview',
+    iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
+}
+function loadDriveRoot(){
+  driveApi("files?q="+encodeURIComponent("'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")+"&fields=files(id,name)&pageSize=200&orderBy=name")
+    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderMyDriveLive(); })
+    .catch(e=>toast('Could not load Drive: '+e.message));
+}
+function renderMyDriveLive(){
+  state.level='mydrive'; closeInfo(); closeAgent();
+  document.querySelector('.stage-wrap').classList.add('ghost');
+  const sc=document.getElementById('screen'); sc.classList.remove('ghost');
+  sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Your live Google Drive · ${LIVE_FOLDERS.length} folder${LIVE_FOLDERS.length===1?'':'s'}</div>
+    <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${f.name}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
+  document.getElementById('crumbRoot').classList.add('here');
+  document.getElementById('crumbSep').style.display='none';
+  document.getElementById('folderCrumb').style.display='none';
+  setNavActive(null);
+}
+function openLiveFolder(id,name){
+  driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=300&orderBy=modifiedTime desc")
+    .then(res=>{
+      FILES.length=0; (res.files||[]).forEach(d=>FILES.push(mapDriveFile(d)));
+      state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query='';
+      document.getElementById('crumbRoot').classList.remove('here');
+      document.getElementById('crumbSep').style.display='';
+      const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
+      document.getElementById('screen').classList.add('ghost');
+      document.querySelector('.stage-wrap').classList.remove('ghost');
+      setView('list');
+    }).catch(e=>toast('Could not open folder: '+e.message));
+}
+function liveThumb(f,cls){
+  const big=cls==='gallery';
+  const src=f.thumbnailLink||f.iconLink||'';
+  return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;${big?'':'padding:0'}"><img src="${src}" referrerpolicy="no-referrer" style="max-width:100%;max-height:100%;object-fit:${big?'cover':'contain'}" onerror="this.onerror=null;this.src='${f.iconLink||''}'"></div>`;
+}
+/* ---- setup dialog ---- */
+function showDriveSetup(){
+  let m=document.getElementById('driveSetup');
+  if(!m){ m=document.createElement('div'); m.id='driveSetup'; m.className='dlg-wrap'; m.onclick=(e)=>{if(e.target===m)closeDriveSetup();}; document.body.appendChild(m); }
+  m.innerHTML=`<div class="dlg">
+    <div class="dlg-h">Connect your Google Drive</div>
+    <ol class="dlg-steps">
+      <li>Enable the <a target="_blank" href="https://console.cloud.google.com/apis/library/drive.googleapis.com?project=gws-dwurtz-332291">Google Drive API</a>.</li>
+      <li>Configure the <a target="_blank" href="https://console.cloud.google.com/apis/credentials/consent?project=gws-dwurtz-332291">OAuth consent screen</a> (External · Testing) and add <b>david@davidwurtz.com</b> as a test user.</li>
+      <li>Go to <a target="_blank" href="https://console.cloud.google.com/apis/credentials?project=gws-dwurtz-332291">Credentials</a> → Create credentials → <b>OAuth client ID</b> → <b>Web application</b>.</li>
+      <li>Under <b>Authorized JavaScript origins</b> add <code>https://dwurtz.github.io</code> and <code>http://localhost</code>.</li>
+      <li>Copy the <b>Client ID</b> and paste it here:</li>
+    </ol>
+    <input id="driveCidInput" placeholder="…apps.googleusercontent.com" value="${driveClientId()}">
+    <div class="dlg-act"><button class="aabtn" onclick="closeDriveSetup()">Cancel</button><button class="aabtn primary" onclick="saveDriveCid()">Save &amp; connect</button></div>
+  </div>`;
+  m.classList.add('open');
+}
+function closeDriveSetup(){ const m=document.getElementById('driveSetup'); if(m) m.classList.remove('open'); }
+function saveDriveCid(){ const v=(document.getElementById('driveCidInput').value||'').trim(); if(!v){toast('Paste your Client ID first');return;} localStorage.setItem('gdrive_client_id',v); closeDriveSetup(); connectDrive(); }
+
 /* ============ live collaborators (Figma-style cursors) ============ */
 const COLLAB=[{name:'Dominique',color:'#1a73e8'},{name:'Michael Igoe',color:'#d93025'}];
 function renderPvPresence(){
