@@ -2102,16 +2102,18 @@ function selectFile(id){
   document.getElementById('listpane').classList.remove('collapsed');
   renderPreview(id);
   renderList();
+  syncUrl();
 }
 /* focus a single item full-width (no file list), e.g. opened from gallery/carousel */
 function openFocused(id){
-  state.focused=true; state.returnView=state.view;
+  state.focused=true; state.focusedId=id; state.returnView=state.view;
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
   lp.classList.add('collapsed');
   fileList.classList.add('ghost'); gallery.classList.add('ghost'); carousel.classList.add('ghost');
   stage.classList.remove('ghost','is-home');
   renderPreview(id);
   autoRail();
+  syncUrl();
 }
 function clearSelection(){
   if(state.focused){
@@ -2170,6 +2172,7 @@ const NAVQ={
   trash:{title:'Trash', q:"trashed=true", order:'modifiedTime desc'}
 };
 function navView(kind){
+  state.navKind=kind;
   document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===kind));
   document.querySelectorAll('.nav-item[data-folder]').forEach(n=>n.classList.remove('active'));
   if(!state.live){ connectDrive(); return; }
@@ -2278,6 +2281,8 @@ function setView(v){
     if(sel) selectFile(sel); else { preview.style.display='none'; home.style.display='none'; emptyHint.style.display=''; }
   }
   autoRail();
+  applyRestore();
+  syncUrl();
 }
 
 /* ============ carousel (cover flow) ============ */
@@ -3264,9 +3269,42 @@ function mapDriveFile(d){
     previewUrl:'https://drive.google.com/file/d/'+d.id+'/preview',
     iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
 }
+/* ---- deep-linking: reflect the current location in the URL hash so refresh restores it ---- */
+function syncUrl(){
+  if(!state.live) return;                       // on the landing screen, leave any saved hash intact for restore
+  const p=new URLSearchParams();
+  if(state.navKind){ p.set('nav', state.navKind); }
+  else {
+    const fid=(state.view==='columns' && state.curFolder && state.curFolder.id) ? state.curFolder.id : (state.filesFolderId||'root');
+    p.set('f', fid||'root');
+  }
+  if(state.view && state.view!=='list') p.set('v', state.view);
+  if(state.focused && state.focusedId) p.set('file', state.focusedId);
+  else if(state.view==='list' && state.selected) p.set('sel', state.selected);
+  const h='#'+p.toString();
+  if(location.hash!==h) history.replaceState(null,'',location.pathname+location.search+h);
+}
+function applyRestore(){                          // one-shot: re-select/-focus the file named in the URL after a folder loads
+  const r=state._restore; if(!r){ return; } state._restore=null;
+  if(r.focus && FILES.find(x=>x.id===r.focus)){ openFocused(r.focus); }
+  else if(r.sel && state.view==='list' && FILES.find(x=>x.id===r.sel && !x.isFolder)){ selectFile(r.sel); }
+}
+function navFromUrl(){                            // read the hash and navigate there (called once root folders are known)
+  const p=new URLSearchParams(location.hash.replace(/^#/,''));
+  const nav=p.get('nav'), f=p.get('f'), v=p.get('v'), file=p.get('file'), sel=p.get('sel');
+  if(file||sel) state._restore={focus:file,sel:sel};
+  if(nav && NAVQ[nav]){ navView(nav); return; }
+  if(f && f!=='root'){
+    const known=(LIVE_FOLDERS||[]).find(x=>x.id===f);
+    if(known){ openLiveFolder(f, known.name, v||'list'); }
+    else driveApi('files/'+f+'?fields=name').then(m=>openLiveFolder(f, m.name||'Folder', v||'list')).catch(()=>openLiveFolder('root','My Drive', v||'list'));
+    return;
+  }
+  openLiveFolder('root','My Drive', v||'list');
+}
 function loadDriveRoot(){
   driveApi("files?q="+encodeURIComponent("'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")+"&fields=files(id,name)&pageSize=400&orderBy=name")
-    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderNavFolders(); openLiveFolder('root','My Drive'); })
+    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderNavFolders(); navFromUrl(); })
     .catch(e=>toast('Could not load Drive: '+e.message));
 }
 function renderMyDriveLive(){
@@ -3282,6 +3320,7 @@ function renderMyDriveLive(){
 }
 function openLiveFolder(id,name,targetView){
   const isRoot = id==='root';
+  state.navKind=null;
   state.curFolder = {id:(isRoot?'root':id), name:(isRoot?'My Drive':(name||'Folder'))};
   driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=400&orderBy=folder,name")
     .then(res=>{
@@ -3370,6 +3409,7 @@ function colClick(level,id){
   if(f.isFolder){ COL_PATH.push({id:f.id,name:f.name}); colSelectedFile=null; colFileObj=null; state.curFolder={id:f.id,name:f.name}; setScopeChip(f.name); }
   else { colSelectedFile=f.id; colFileObj=f; }
   renderColumns();
+  syncUrl();
 }
 function openColFile(){ const f=colFileObj; if(!f) return; if(!FILES.find(x=>x.id===f.id)) FILES.push(f); openFocused(f.id); }
 /* ---- live image (white viewer) + real Drive comments ---- */
