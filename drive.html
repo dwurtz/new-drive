@@ -3168,18 +3168,43 @@ if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloud
 let driveToken=null, driveTokenClient=null, LIVE_FOLDERS=[];
 const DEFAULT_CLIENT_ID='232751288732-sr0pkbckp4hc7mn7qg4jsg3e3tdao176.apps.googleusercontent.com';
 function driveClientId(){ return localStorage.getItem('gdrive_client_id')||DEFAULT_CLIENT_ID; }
+let tokenExpiry=0, _tokenCb=null, _refreshT=null;
+function gisReady(){ return !!(window.google&&google.accounts&&google.accounts.oauth2); }
+function authHeaders(){ return {Authorization:'Bearer '+driveToken}; }
+function getTokenClient(){
+  if(!driveTokenClient){
+    const cid=driveClientId(); if(!cid||!gisReady()) return null;
+    driveTokenClient=google.accounts.oauth2.initTokenClient({ client_id:cid, scope:DRIVE_SCOPE,
+      callback:(r)=>{ const cb=_tokenCb; _tokenCb=null;
+        if(r&&r.access_token){ driveToken=r.access_token; tokenExpiry=Date.now()+((r.expires_in||3600)*1000);
+          localStorage.setItem('gdrive_connected','1'); scheduleRefresh(); if(cb) cb(true); }
+        else { if(cb) cb(false); } },
+      error_callback:(e)=>{ const cb=_tokenCb; _tokenCb=null; if(cb) cb(false); } });
+  }
+  return driveTokenClient;
+}
+function requestToken(silent, cb){ const tc=getTokenClient(); if(!tc){ if(cb)cb(false); return; } _tokenCb=cb; tc.requestAccessToken({prompt: silent?'':'consent'}); }
+function scheduleRefresh(){ clearTimeout(_refreshT); const ms=Math.max(30000,(tokenExpiry-Date.now())-90000); _refreshT=setTimeout(()=>requestToken(true,()=>{}), ms); }
 function connectDrive(){
-  const cid=driveClientId();
-  if(!cid){ showDriveSetup(); return; }
-  if(!(window.google&&google.accounts&&google.accounts.oauth2)){ toast('Google sign-in is still loading — try again in a second'); return; }
-  driveTokenClient=google.accounts.oauth2.initTokenClient({ client_id:cid, scope:DRIVE_SCOPE,
-    callback:(r)=>{ if(r&&r.access_token){ driveToken=r.access_token; state.live=true; toast('Connected to Google Drive'); loadDriveRoot(); } else { toast('Sign-in cancelled'); } },
-    error_callback:(e)=>toast('Sign-in error: '+(e&&e.type||'failed')) });
-  driveTokenClient.requestAccessToken({prompt: driveToken?'':'consent'});
+  if(!driveClientId()){ showDriveSetup(); return; }
+  if(!gisReady()){ toast('Google sign-in is still loading — try again in a second'); return; }
+  requestToken(false,(ok)=>{ if(ok){ state.live=true; toast('Connected to Google Drive'); loadDriveRoot(); } else toast('Sign-in cancelled'); });
+}
+function silentConnect(){
+  if(!driveClientId() || !gisReady()) return;
+  requestToken(true,(ok)=>{ if(ok){ state.live=true; loadDriveRoot(); } });   // no popup; stays on landing if it can't
 }
 function driveApi(path){
-  return fetch('https://www.googleapis.com/drive/v3/'+path,{headers:{Authorization:'Bearer '+driveToken}})
-    .then(r=>{ if(r.status===401){ driveToken=null; throw new Error('session expired — reconnect'); } if(!r.ok) throw new Error('Drive '+r.status); return r.json(); });
+  const url='https://www.googleapis.com/drive/v3/'+path;
+  return fetch(url,{headers:authHeaders()}).then(r=>{
+    if(r.status===401){ // token expired — refresh silently and retry once
+      return new Promise((res,rej)=>{ requestToken(true,(ok)=>{
+        if(!ok){ rej(new Error('session expired — click your avatar to reconnect')); return; }
+        fetch(url,{headers:authHeaders()}).then(r2=>{ if(!r2.ok) rej(new Error('Drive '+r2.status)); else res(r2.json()); }).catch(rej);
+      }); });
+    }
+    if(!r.ok) throw new Error('Drive '+r.status); return r.json();
+  });
 }
 function mimeKind(m){
   if(m==='application/vnd.google-apps.folder') return 'folder';
@@ -3394,6 +3419,13 @@ renderRoster();
 renderDrawerHead();
 renderTasks(); renderPins(); renderNavFolders();
 showConnectLanding();   // no demo data — connect to load real Drive
+// auto-reconnect (silent, no popup) if previously connected
+(function autoReconnect(tries){
+  if(!localStorage.getItem('gdrive_connected')) return;
+  if(gisReady()){ silentConnect(); return; }
+  if(tries>40) return;                       // give up after ~8s
+  setTimeout(()=>autoReconnect((tries||0)+1), 200);
+})(0);
 </script>
 </body>
 </html>
