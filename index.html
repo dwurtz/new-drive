@@ -971,9 +971,9 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .col-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .col-chev{color:var(--faint);flex:none;font-size:15px}
 .col-load,.col-empty{padding:14px 10px;color:var(--faint);font-size:12.5px}
-.col-preview{width:310px;background:var(--surface-2)}
-.cp{padding:24px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
-.cp-img{max-width:100%;border-radius:8px;box-shadow:var(--shadow-md)}
+.col-preview{flex:1 1 380px;min-width:340px;background:var(--surface-2)}
+.cp{padding:32px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;max-width:640px;margin:0 auto}
+.cp-img{max-width:min(100%,560px);max-height:70vh;border-radius:8px;box-shadow:var(--shadow-md)}
 .cp-icon img{width:72px;height:72px}
 .cp-name{font-weight:600;font-size:14.5px;word-break:break-word;line-height:1.35}
 .cp-meta{font-size:12px;color:var(--faint);line-height:1.7}
@@ -3356,7 +3356,7 @@ function renderColumns(){
   });
   if(colSelectedFile&&colFileObj){
     const f=colFileObj, pcol=document.createElement('div'); pcol.className='col col-preview'; cont.appendChild(pcol);
-    const thumb = (f.type==='image'&&f.thumbnailLink) ? `<img class="cp-img" src="${f.thumbnailLink}" referrerpolicy="no-referrer">`
+    const thumb = (f.type==='image'&&f.thumbnailLink) ? `<img class="cp-img" src="${f.thumbnailLink.replace(/=s\d+.*$/,'=s1600')}" referrerpolicy="no-referrer">`
       : `<div class="cp-icon">${f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16()}</div>`;
     pcol.innerHTML=`<div class="cp">${thumb}<div class="cp-name">${f.name}</div>
       <div class="cp-meta">${typeLabel(f)} · ${f.size||'—'}<br>Modified ${dstr(daysAgo(f.added))}</div>
