@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root{
   --bg:#ffffff;
@@ -215,7 +216,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   padding:14px 16px 10px;color:var(--faint);
   font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
 }
-.lp-sort{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
+.lp-sort{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted);position:relative;border-radius:6px;padding:2px 4px}
+.lp-sort:hover{background:var(--hover);color:var(--ink)}
+.sort-menu{position:absolute;top:100%;left:0;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:5px;z-index:50;min-width:160px;text-transform:none;letter-spacing:normal}
+.sort-menu button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--ink);text-align:left}
+.sort-menu button:hover{background:var(--hover)}
+.sort-menu .sm-dir{margin-left:auto;color:var(--accent);font-size:10px}
 .lp-list{flex:1;overflow-y:auto;padding:0 8px 12px}
 .lp-list::-webkit-scrollbar{width:9px}
 .lp-list::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
@@ -507,6 +513,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .pv-img-wrap{position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0}
 .pv-img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:var(--shadow-lg);border-radius:4px;display:block}
 .pv-img-loading{color:var(--faint);font-size:13px}
+.pv-live-doc{position:absolute;inset:0;overflow:auto;background:#fff;padding:28px;display:flex;flex-direction:column;align-items:center;gap:20px}
+.pv-pdf-pagewrap{position:relative;cursor:crosshair;line-height:0;box-shadow:var(--shadow-lg);border-radius:4px;max-width:100%}
+.pv-pdf-page{display:block;width:100%;border-radius:4px;background:#fff}
 .ipc-add{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);background:none;padding:2px 6px;border-radius:6px}
 .ipc-add:hover{background:var(--accent-soft)}
 .pv-applabel{position:absolute;top:11px;right:11px;z-index:2;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
@@ -1072,7 +1081,8 @@ svg{display:block}
             <button class="selbtn" data-sel-act="delete" title="Delete"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
           </div>
           <div class="lp-head">
-            <span class="lp-sort"><span id="lpCount">12 items</span> · Date modified <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+            <span class="lp-count-wrap"><span id="lpCount">0 items</span> · </span>
+            <span class="lp-sort" onclick="toggleSortMenu(event)"><span id="lpSortLabel">Last modified</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
           </div>
           <div class="lp-list" id="fileList"></div>
           <div class="gallery ghost" id="gallery"></div>
@@ -1887,9 +1897,36 @@ function matchesQuery(f){
   const q = state.query.toLowerCase();
   return (f.name+' '+f.short).toLowerCase().includes(q);
 }
-function getVisibleFiles(){
-  return FILES.filter(f => !isFuture(f) && matchesQuery(f));
+let SORT={key:'modified',dir:'desc'};
+const SORT_LABEL={name:'Name', modified:'Last modified', size:'Size'};
+function sortCmp(a,b){
+  if(a.isFolder!==b.isFolder) return a.isFolder?-1:1;   // folders first
+  let r=0;
+  if(SORT.key==='name') r=(a.short||'').localeCompare(b.short||'');
+  else if(SORT.key==='size') r=(a.bytes||0)-(b.bytes||0);
+  else r=(a.modifiedAt||0)-(b.modifiedAt||0);
+  return SORT.dir==='desc' ? -r : r;
 }
+function getVisibleFiles(){
+  return FILES.filter(f => !isFuture(f) && matchesQuery(f)).sort(sortCmp);
+}
+function setSort(key){
+  if(SORT.key===key) SORT.dir = SORT.dir==='desc'?'asc':'desc';
+  else { SORT.key=key; SORT.dir = key==='name'?'asc':'desc'; }
+  closeSortMenu();
+  document.getElementById('lpSortLabel').textContent = SORT_LABEL[SORT.key];
+  if(state.view==='gallery') renderGallery(); else if(state.view==='carousel') renderCarousel(); else renderList();
+}
+function toggleSortMenu(e){
+  e&&e.stopPropagation();
+  let m=document.getElementById('sortMenu');
+  if(m){ closeSortMenu(); return; }
+  m=document.createElement('div'); m.id='sortMenu'; m.className='sort-menu';
+  m.innerHTML=['name','modified','size'].map(k=>`<button onclick="setSort('${k}')">${SORT_LABEL[k]}${SORT.key===k?' <span class=\"sm-dir\">'+(SORT.dir==='desc'?'▼':'▲')+'</span>':''}</button>`).join('');
+  const hd=document.querySelector('.lp-sort'); hd.appendChild(m);
+  setTimeout(()=>document.addEventListener('click', closeSortMenu, {once:true}),0);
+}
+function closeSortMenu(){ const m=document.getElementById('sortMenu'); if(m) m.remove(); }
 
 /* ============ file list (combined: thumb + type badge + attribution + checkbox + quick-acts + ctx) ============ */
 function rowHTML(f){
@@ -1973,6 +2010,8 @@ function renderGallery(){
 /* ============ selection / preview (combined: multi-page OR colored + provenance + suggestions) ============ */
 const home=document.getElementById('home'), preview=document.getElementById('preview'), emptyHint=document.getElementById('emptyHint');
 function renderPreview(id){
+  const f0=FILES.find(x=>x.id===id);
+  if(f0 && f0.isFolder){ openLiveFolder(f0.id, f0.name); return; }
   state.selected=id;
   const f=FILES.find(x=>x.id===id);
   if(!f) return;
@@ -1990,8 +2029,8 @@ function renderPreview(id){
       canvas.innerHTML = `<div class="pv-live-img" id="pvLiveImg"><div class="pv-img-loading">Loading…</div></div>`;
       loadLiveImage(f);
     } else {
-      canvas.innerHTML = `<iframe class="pv-live" src="${f.previewUrl}" allow="autoplay" referrerpolicy="no-referrer"></iframe>`;
-      loadLiveComments(f);
+      canvas.innerHTML = `<div class="pv-live-doc" id="pvLiveDoc"><div class="pv-img-loading">Loading…</div></div>`;
+      loadLivePdf(f);
     }
     canvas.onscroll = null;
   } else if(f.type==='webapp'){
@@ -2154,7 +2193,7 @@ function showConnectLanding(){
   setNavActive(null); setScopeChip(null);
 }
 function goMyDrive(){
-  if(state.live){ renderMyDriveLive(); setScopeChip(null); } else { showConnectLanding(); }
+  if(state.live){ openLiveFolder('root','My Drive'); } else { showConnectLanding(); }
 }
 function enterFolder(name){
   const f=FOLDERS.find(x=>x.name===name);
@@ -2202,8 +2241,9 @@ function setView(v){
     stage.classList.remove('ghost','is-home');
     renderList();
     const vis=getVisibleFiles();
-    const sel=(state.selected&&vis.some(f=>f.id===state.selected))?state.selected:(vis[0]&&vis[0].id);
-    if(sel) selectFile(sel);
+    const firstFile=vis.find(f=>!f.isFolder);
+    const sel=(state.selected&&vis.some(f=>f.id===state.selected&&!f.isFolder))?state.selected:(firstFile&&firstFile.id);
+    if(sel) selectFile(sel); else { preview.style.display='none'; home.style.display='none'; emptyHint.style.display=''; }
   }
   autoRail();
 }
@@ -2263,6 +2303,8 @@ function setCoverFromPreview(){
 function rowClick(e, id){
   if(e.target.closest('.fcheck') || e.target.closest('.quick')) return;
   if(state.checked.size>0){ toggleCheck(e, id); return; }
+  const f=FILES.find(x=>x.id===id);
+  if(f && f.isFolder){ openLiveFolder(f.id, f.name); return; }   // navigate into subfolders
   selectFile(id);
 }
 function toggleCheck(e, id){
@@ -3124,6 +3166,7 @@ function toast(msg){
 /* ============ init ============ */
 /* ============ Google Drive — real OAuth connection ============ */
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
 let driveToken=null, driveTokenClient=null, LIVE_FOLDERS=[];
 const DEFAULT_CLIENT_ID='232751288732-sr0pkbckp4hc7mn7qg4jsg3e3tdao176.apps.googleusercontent.com';
 function driveClientId(){ return localStorage.getItem('gdrive_client_id')||DEFAULT_CLIENT_ID; }
@@ -3149,16 +3192,20 @@ function mimeKind(m){
   return 'doc';
 }
 function mapDriveFile(d){
-  const days=Math.max(0,Math.round((Date.now()-new Date(d.modifiedTime||Date.now()).getTime())/864e5));
-  return { id:d.id, name:d.name, short:d.name, type:mimeKind(d.mimeType), ext:(d.fileExtension||({gdoc:'doc',sheet:'sheet',image:'img'}[mimeKind(d.mimeType)]||'pdf')).toUpperCase().slice(0,5),
+  const mt=new Date(d.modifiedTime||0).getTime();
+  const days=Math.max(0,Math.round((Date.now()-(mt||Date.now()))/864e5));
+  const isFolder=d.mimeType==='application/vnd.google-apps.folder';
+  return { id:d.id, name:d.name, short:d.name, type:isFolder?'folder':mimeKind(d.mimeType),
+    ext:isFolder?'':(d.fileExtension||({gdoc:'doc',sheet:'sheet',image:'img'}[mimeKind(d.mimeType)]||'pdf')).toUpperCase().slice(0,5),
     by:(d.owners&&d.owners[0]&&d.owners[0].displayName)||'Me', byAgent:false, added:days,
-    size:d.size?(Math.round(d.size/1024)+' KB'):'—', live:true, mimeRaw:d.mimeType,
+    modifiedAt:mt, bytes:+(d.size||0),
+    size:d.size?(Math.round(d.size/1024)+' KB'):'—', live:true, mimeRaw:d.mimeType, isFolder:isFolder,
     previewUrl:'https://drive.google.com/file/d/'+d.id+'/preview',
     iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
 }
 function loadDriveRoot(){
-  driveApi("files?q="+encodeURIComponent("'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")+"&fields=files(id,name)&pageSize=200&orderBy=name")
-    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderNavFolders(); renderMyDriveLive(); })
+  driveApi("files?q="+encodeURIComponent("'root' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false")+"&fields=files(id,name)&pageSize=400&orderBy=name")
+    .then(res=>{ LIVE_FOLDERS=(res.files||[]).map(f=>({name:f.name,id:f.id})); renderNavFolders(); openLiveFolder('root','My Drive'); })
     .catch(e=>toast('Could not load Drive: '+e.message));
 }
 function renderMyDriveLive(){
@@ -3173,16 +3220,26 @@ function renderMyDriveLive(){
   setNavActive(null);
 }
 function openLiveFolder(id,name){
-  driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=300&orderBy=modifiedTime desc")
+  const isRoot = id==='root';
+  driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=400&orderBy=folder,name")
     .then(res=>{
       FILES.length=0; (res.files||[]).forEach(d=>FILES.push(mapDriveFile(d)));
-      state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query='';
-      document.getElementById('crumbRoot').classList.remove('here');
-      document.getElementById('crumbSep').style.display='';
-      const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
+      state.coverId=(FILES.find(f=>!f.isFolder)||FILES[0]||{}).id; state.selected=null; state.query='';
+      if(isRoot){
+        state.level='mydrive';
+        document.getElementById('crumbRoot').classList.add('here');
+        document.getElementById('crumbSep').style.display='none';
+        document.getElementById('folderCrumb').style.display='none';
+        setNavActive(null); setScopeChip(null);
+      } else {
+        state.level='folder';
+        document.getElementById('crumbRoot').classList.remove('here');
+        document.getElementById('crumbSep').style.display='';
+        const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
+        setNavActive(name); setScopeChip(name);
+      }
       document.getElementById('screen').classList.add('ghost');
       document.querySelector('.stage-wrap').classList.remove('ghost');
-      setNavActive(name); setScopeChip(name);
       setView('list');
     }).catch(e=>toast('Could not open folder: '+e.message));
 }
@@ -3204,20 +3261,22 @@ function loadLiveComments(f){
     .catch(()=>{ liveComments=[]; if(state.selected===f.id) renderInfo(); });
 }
 function commentXY(c){ try{ const a=JSON.parse(c.anchor); if(typeof a.x==='number') return a; }catch(e){} return null; }
+function addChip(container,c,xy){
+  const pin=document.createElement('button');
+  pin.className='cmt-pin'+(xy.x>52?' flip':'')+(xy.y<22?' down':''); pin.id='pin-live-'+c.id;
+  pin.style.left=xy.x+'%'; pin.style.top=xy.y+'%'; pin.style.setProperty('--c','#1a73e8');
+  const who=(c.author&&c.author.displayName)||'Someone';
+  pin.innerHTML=`<span class="cmt-dot">${who.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</span><span class="cmt-bub"><b>${who}</b>${c.content}</span>`;
+  pin.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.cmt-pin.open').forEach(p=>{if(p!==pin)p.classList.remove('open');}); pin.classList.toggle('open'); };
+  container.appendChild(pin);
+}
 function renderLiveCommentChips(){
-  const box=document.getElementById('pvImgWrap'); if(!box) return;
-  box.querySelectorAll('.cmt-pin').forEach(p=>p.remove());
-  liveComments.forEach(c=>{
-    const xy=commentXY(c); if(!xy) return;
-    const pin=document.createElement('button');
-    pin.className='cmt-pin'+(xy.x>52?' flip':'')+(xy.y<22?' down':'');
-    pin.id='pin-live-'+c.id;
-    pin.style.left=xy.x+'%'; pin.style.top=xy.y+'%'; pin.style.setProperty('--c','#1a73e8');
-    const who=(c.author&&c.author.displayName)||'Someone';
-    pin.innerHTML=`<span class="cmt-dot">${who.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</span><span class="cmt-bub"><b>${who}</b>${c.content}</span>`;
-    pin.onclick=(e)=>{ e.stopPropagation(); document.querySelectorAll('.cmt-pin.open').forEach(p=>{if(p!==pin)p.classList.remove('open');}); pin.classList.toggle('open'); };
-    box.appendChild(pin);
-  });
+  const imgWrap=document.getElementById('pvImgWrap');
+  if(imgWrap){ imgWrap.querySelectorAll('.cmt-pin').forEach(p=>p.remove());
+    liveComments.forEach(c=>{ const xy=commentXY(c); if(!xy||xy.page) return; addChip(imgWrap,c,xy); }); }
+  const doc=document.getElementById('pvLiveDoc');
+  if(doc){ doc.querySelectorAll('.cmt-pin').forEach(p=>p.remove());
+    liveComments.forEach(c=>{ const xy=commentXY(c); if(!xy||!xy.page) return; const pw=doc.querySelector('.pv-pdf-pagewrap[data-page="'+xy.page+'"]'); if(pw) addChip(pw,c,xy); }); }
 }
 function addCommentAt(e,f){
   if(e.target.closest('.cmt-pin')) return;
@@ -3227,6 +3286,47 @@ function addCommentAt(e,f){
   if(x<0||x>100||y<0||y>100) return;
   const text=prompt('Add a comment'); if(!text) return;
   postComment(f, text, {x:Math.round(x),y:Math.round(y)});
+}
+function addPdfCommentAt(e,f,pageEl,pageNo){
+  if(e.target.closest('.cmt-pin')) return;
+  const r=pageEl.getBoundingClientRect();
+  const x=((e.clientX-r.left)/r.width)*100, y=((e.clientY-r.top)/r.height)*100;
+  const text=prompt('Add a comment'); if(!text) return;
+  postComment(f, text, {page:pageNo, x:Math.round(x), y:Math.round(y)});
+}
+function liveDocUrl(f){
+  if(/vnd\.google-apps/.test(f.mimeRaw||'') || ['gdoc','sheet','slides'].indexOf(f.type)>=0)
+    return 'https://www.googleapis.com/drive/v3/files/'+f.id+'/export?mimeType=application/pdf';
+  return 'https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media';
+}
+function loadLivePdf(f){
+  const box=document.getElementById('pvLiveDoc');
+  if(!window.pdfjsLib){ if(box) box.innerHTML=`<iframe class="pv-live" src="${f.previewUrl}" referrerpolicy="no-referrer"></iframe>`; loadLiveComments(f); return; }
+  fetch(liveDocUrl(f),{headers:{Authorization:'Bearer '+driveToken}})
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
+    .then(pdf=>renderPdf(pdf,f))
+    .then(()=>loadLiveComments(f))
+    .catch(e=>{ if(box) box.innerHTML='<div class="pv-img-loading">Could not render document ('+e.message+')</div>'; });
+}
+function renderPdf(pdf,f){
+  const box=document.getElementById('pvLiveDoc'); if(!box) return Promise.resolve();
+  box.innerHTML='';
+  const targetW=Math.min(820, (box.clientWidth||820)-56);
+  const seq=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    seq.push(pdf.getPage(i).then(page=>{
+      const base=page.getViewport({scale:1});
+      const scale=targetW/base.width;
+      const vp=page.getViewport({scale:scale*2});
+      const wrap=document.createElement('div'); wrap.className='pv-pdf-pagewrap'; wrap.dataset.page=i;
+      wrap.style.width=(vp.width/2)+'px'; wrap.onclick=(e)=>addPdfCommentAt(e,f,wrap,i);
+      const c=document.createElement('canvas'); c.className='pv-pdf-page'; c.width=vp.width; c.height=vp.height; c.style.width='100%';
+      wrap.appendChild(c); box.appendChild(wrap);
+      return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+    }));
+  }
+  return Promise.all(seq);
 }
 function addCommentPlain(){
   if(!liveCommentFile){ return; }
@@ -3242,6 +3342,7 @@ function postComment(f,text,anchor){
 }
 function liveThumb(f,cls){
   const big=cls==='gallery';
+  if(f.isFolder){ return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;color:var(--muted)">${big?folderIco():folderIco16()}</div>`; }
   const src=f.thumbnailLink||f.iconLink||'';
   return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;${big?'':'padding:0'}"><img src="${src}" referrerpolicy="no-referrer" style="max-width:100%;max-height:100%;object-fit:${big?'cover':'contain'}" onerror="this.onerror=null;this.src='${f.iconLink||''}'"></div>`;
 }
