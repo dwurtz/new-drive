@@ -1991,6 +1991,7 @@ function openFocused(id){
   fileList.classList.add('ghost'); gallery.classList.add('ghost'); carousel.classList.add('ghost');
   stage.classList.remove('ghost','is-home');
   renderPreview(id);
+  autoRail();
 }
 function clearSelection(){
   if(state.focused){
@@ -2094,6 +2095,7 @@ function setView(v){
     const sel=(state.selected&&vis.some(f=>f.id===state.selected))?state.selected:(vis[0]&&vis[0].id);
     if(sel) selectFile(sel);
   }
+  autoRail();
 }
 
 /* ============ carousel (cover flow) ============ */
@@ -2657,11 +2659,12 @@ function openAgent(tab){
   renderDrawerHead(); renderPresence();
   if(state.activeAgent) renderAgentChat(state.activeAgent); else renderRoster();
   switchTab(tab || (state.activeAgent?'chat':'roster'));
+  autoRail();
 }
 function closeAgent(){
   state.agentOpen=false; state.spawning=false; state.activeAgent=null;
   drawer.classList.remove('open'); agentBtn.classList.remove('on');
-  renderDrawerHead();
+  renderDrawerHead(); autoRail();
 }
 agentBtn.addEventListener('click',()=>state.agentOpen?closeAgent():openAgent());
 document.getElementById('dwTabs').addEventListener('click',e=>{const t=e.target.closest('.dw-tab');if(t)switchTab(t.dataset.tab);});
@@ -2796,14 +2799,7 @@ function renderInfo(){
     if(f){
       if(tEl) tEl.textContent='Document activity';
       if(sEl) sEl.textContent=f.short;
-      const TL={brief:'PDF',doc:'PDF',pdf:'PDF',image:'JPEG image',sheet:'Google Sheet',gdoc:'Google Doc',webapp:'Web app'};
       document.getElementById('ipBody').innerHTML=`
-        <div class="ip-stats">
-          <div class="ip-stat"><div class="k">Type</div><div class="v">${TL[f.type]||'PDF'}</div></div>
-          <div class="ip-stat"><div class="k">Owner</div><div class="v">${f.by}</div></div>
-          <div class="ip-stat"><div class="k">Modified</div><div class="v">${dstr(daysAgo(f.added))}</div></div>
-          <div class="ip-stat"><div class="k">Size</div><div class="v">${f.size||'—'}</div></div>
-        </div>
         ${(()=>{const cm=COMMENTS[f.id]||[];return `
         <h4 class="ip-h" style="margin-bottom:12px">Comments <span style="color:var(--faint);font-weight:600">${cm.length}</span></h4>
         ${cm.length? cm.map(c=>`<div class="ipc" onclick="focusComment('${f.id}','${c.id}')">
@@ -2876,6 +2872,7 @@ function closeInfo(){
   state.infoOpen=false;
   document.getElementById('infopanel').classList.remove('open');
   document.getElementById('infoBtn').classList.remove('on');
+  autoRail();
 }
 function openInfo(){
   if(state.view==='carousel') return;   // immersive: no right panel in carousel
@@ -2883,7 +2880,7 @@ function openInfo(){
   state.infoOpen=true;
   document.getElementById('infopanel').classList.add('open');
   document.getElementById('infoBtn').classList.add('on');
-  renderInfo();
+  renderInfo(); autoRail();
 }
 function toggleInfo(){ state.infoOpen ? closeInfo() : openInfo(); }
 document.getElementById('infoBtn').addEventListener('click',toggleInfo);
@@ -2891,7 +2888,15 @@ document.getElementById('infoBtn').addEventListener('click',toggleInfo);
 /* ============ rail ============ */
 let _railManual=false;
 document.getElementById('railToggle').addEventListener('click',()=>{ _railManual=true; document.getElementById('app').classList.toggle('rail-collapsed'); });
-function autoRail(){ if(_railManual) return; document.getElementById('app').classList.toggle('rail-collapsed', window.innerWidth<1180); }
+function fourPanels(){ // nav + file list + preview + right panel
+  return state.view==='list' && state.level==='folder' && !state.focused && (state.infoOpen||state.agentOpen);
+}
+function autoRail(){
+  const app=document.getElementById('app');
+  if(fourPanels()){ app.classList.add('rail-collapsed'); return; }   // make room when 4 columns are open
+  if(_railManual) return;
+  app.classList.toggle('rail-collapsed', window.innerWidth<1180);
+}
 window.addEventListener('resize', autoRail); autoRail();
 
 /* ============ global dismiss ============ */
