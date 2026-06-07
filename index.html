@@ -3023,7 +3023,8 @@ function toast(msg){
 /* ============ Google Drive — real OAuth connection ============ */
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
 let driveToken=null, driveTokenClient=null, LIVE_FOLDERS=[];
-function driveClientId(){ return localStorage.getItem('gdrive_client_id')||''; }
+const DEFAULT_CLIENT_ID='232751288732-sr0pkbckp4hc7mn7qg4jsg3e3tdao176.apps.googleusercontent.com';
+function driveClientId(){ return localStorage.getItem('gdrive_client_id')||DEFAULT_CLIENT_ID; }
 function connectDrive(){
   const cid=driveClientId();
   if(!cid){ showDriveSetup(); return; }
