@@ -1454,6 +1454,7 @@ state.scopeAll = false;
 state.focused = false;
 state.returnView = 'gallery';
 state.level = 'folder';
+state.curFolder = null;   // {id,name} of the folder you're in (null for query views)
 let _lastCheckedId = null;
 
 /* ============ provenance (workspace feature) ============ */
@@ -2178,7 +2179,7 @@ function navView(kind){
     .catch(e=>toast('Could not load '+c.title+': '+e.message));
 }
 function showLiveList(title, items){
-  state.level='folder'; FILES.length=0;
+  state.level='folder'; state.curFolder=null; FILES.length=0;
   items.filter(d=>d.mimeType!=='application/vnd.google-apps.folder').forEach(d=>FILES.push(mapDriveFile(d)));
   state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query='';
   document.getElementById('crumbRoot').classList.remove('here');
@@ -2197,7 +2198,7 @@ function driveLogoSvg(px){return `<svg width="${px}" height="${px*78/87.3}" view
 function setScopeChip(name){
   const chip=document.getElementById('scopeChip'), lbl=document.getElementById('scopeChipLabel');
   if(!chip) return;
-  if(name){ chip.style.display=''; if(lbl) lbl.textContent=name; document.getElementById('search').classList.remove('broad'); }
+  if(name){ chip.style.display=''; if(lbl) lbl.textContent='Current folder'; chip.title=name; document.getElementById('search').classList.remove('broad'); }
   else { chip.style.display='none'; }
 }
 function showConnectLanding(){
@@ -2242,12 +2243,17 @@ function enterFolder(name){
   }
 }
 function setView(v){
+  const prevView=state.view;
   state.view=v;
   state.focused=false;
   document.getElementById('app').classList.toggle('in-carousel', v==='carousel');
   document.getElementById('listpane').classList.remove('collapsed');
   document.getElementById('screen').classList.add('ghost');            // leave the My Drive / landing screen
   document.querySelector('.stage-wrap').classList.remove('ghost');     // show the content area
+  // leaving columns into a content view: sync to wherever we drilled
+  if(prevView==='columns' && v!=='columns' && state.live && state.curFolder && state.curFolder.id && state.curFolder.id!==state.filesFolderId){
+    openLiveFolder(state.curFolder.id, state.curFolder.name, v); return;
+  }
   document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
   const full=(v==='gallery'||v==='carousel'||v==='columns');
@@ -2259,7 +2265,7 @@ function setView(v){
     carousel.classList.toggle('ghost', v!=='carousel');
     columnsEl.classList.toggle('ghost', v!=='columns');
     stage.classList.add('ghost','is-home');
-    if(v==='gallery') renderGallery(); else if(v==='carousel') renderCarousel(); else renderColumns();
+    if(v==='gallery') renderGallery(); else if(v==='carousel') renderCarousel(); else renderColumnsFromCurrent();
     if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
   }else{
     lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
@@ -3274,11 +3280,13 @@ function renderMyDriveLive(){
   document.getElementById('folderCrumb').style.display='none';
   setNavActive(null);
 }
-function openLiveFolder(id,name){
+function openLiveFolder(id,name,targetView){
   const isRoot = id==='root';
+  state.curFolder = {id:(isRoot?'root':id), name:(isRoot?'My Drive':(name||'Folder'))};
   driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=400&orderBy=folder,name")
     .then(res=>{
       FILES.length=0; (res.files||[]).forEach(d=>FILES.push(mapDriveFile(d)));
+      state.filesFolderId=id;
       state.coverId=(FILES.find(f=>!f.isFolder)||FILES[0]||{}).id; state.selected=null; state.query='';
       if(isRoot){
         state.level='mydrive';
@@ -3296,8 +3304,15 @@ function openLiveFolder(id,name){
       }
       document.getElementById('screen').classList.add('ghost');
       document.querySelector('.stage-wrap').classList.remove('ghost');
-      setView('list');
+      setView(targetView||'list');
     }).catch(e=>toast('Could not open folder: '+e.message));
+}
+function renderColumnsFromCurrent(){
+  const cf=state.curFolder;
+  if(cf && cf.id && cf.id!=='root'){
+    columnsEl.innerHTML='<div class="col" style="padding:18px;color:var(--faint)">Loading…</div>';
+    colPathFor(cf.id,cf.name).then(p=>{ COL_PATH=p; colSelectedFile=null; colFileObj=null; renderColumns(); });
+  } else { COL_PATH=[{id:'root',name:'My Drive'}]; colSelectedFile=null; colFileObj=null; renderColumns(); }
 }
 /* ---- columns view (Finder Miller columns) ---- */
 let COL_PATH=[], colCache={}, colSelectedFile=null, colFileObj=null;
@@ -3305,6 +3320,21 @@ function colChildren(id){
   if(colCache[id]) return Promise.resolve(colCache[id]);
   return driveApi("files?q="+encodeURIComponent("'"+id+"' in parents and trashed=false")+"&fields=files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName))&pageSize=400&orderBy=folder,name")
     .then(res=>{ const items=(res.files||[]).map(mapDriveFile); colCache[id]=items; return items; });
+}
+function colPathFor(id,name){   // build [root … folder] by walking parents
+  const chain=[{id:id,name:name||'Folder'}];
+  function step(cur){
+    return driveApi('files/'+cur+'?fields=parents').then(m=>{
+      const p=m.parents&&m.parents[0]; if(!p) return;
+      return driveApi('files/'+p+'?fields=name,parents').then(pm=>{
+        const grand=pm.parents&&pm.parents[0];
+        chain.unshift(grand?{id:p,name:pm.name||'Folder'}:{id:'root',name:'My Drive'});
+        if(grand) return step(p);
+      });
+    });
+  }
+  return step(id).then(()=>{ if(chain[0].id!=='root') chain.unshift({id:'root',name:'My Drive'}); return chain; })
+    .catch(()=>[{id:'root',name:'My Drive'},{id:id,name:name||'Folder'}]);
 }
 function renderColumns(){
   if(!state.live){ showConnectLanding(); return; }
@@ -3337,7 +3367,7 @@ function renderColumns(){
 function colClick(level,id){
   const items=colCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
   COL_PATH=COL_PATH.slice(0,level+1);
-  if(f.isFolder){ COL_PATH.push({id:f.id,name:f.name}); colSelectedFile=null; colFileObj=null; }
+  if(f.isFolder){ COL_PATH.push({id:f.id,name:f.name}); colSelectedFile=null; colFileObj=null; state.curFolder={id:f.id,name:f.name}; setScopeChip(f.name); }
   else { colSelectedFile=f.id; colFileObj=f; }
   renderColumns();
 }
