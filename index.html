@@ -1,0 +1,2778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drive — reimagined</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;
+  --surface:#ffffff;
+  --surface-2:#f7f9fc;
+  --ink:#1f1f1f;
+  --muted:#5f6368;
+  --faint:#80868b;
+  --line:#e3e6ea;
+  --line-2:#d3d7de;
+  --hover:#f0f4f9;
+  --sel:#e8f0fe;
+  --canvas:#f7f9fc;
+  --accent:#0b57d0;
+  --accent-press:#0842a0;
+  --accent-soft:#e8f0fe;
+  --pill:#c2e7ff;
+  --shadow-sm:0 1px 2px rgba(60,64,67,.10);
+  --shadow-md:0 1px 3px rgba(60,64,67,.12),0 4px 10px rgba(60,64,67,.08);
+  --shadow-lg:0 2px 8px rgba(60,64,67,.12),0 10px 30px rgba(60,64,67,.14);
+  --r:14px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --rail-w:222px;
+  --rail-w-collapsed:64px;
+  --list-w:380px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:"Hanken Grotesk",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+  font-size:14px;
+  letter-spacing:-.01em;
+}
+::selection{background:var(--hover)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.serif{font-family:"Fraunces",serif}
+.mono{font-family:"JetBrains Mono",monospace}
+
+/* ---------- shell ---------- */
+.app{
+  display:grid;
+  grid-template-columns:var(--rail-w) 1fr;
+  grid-template-rows:minmax(0,1fr);
+  height:100vh;
+  transition:grid-template-columns .42s var(--ease);
+}
+.app.rail-collapsed{grid-template-columns:var(--rail-w-collapsed) 1fr}
+
+/* ---------- rail ---------- */
+.rail{
+  border-right:1px solid var(--line);
+  background:var(--surface);
+  display:flex;flex-direction:column;
+  padding:14px 12px;
+  overflow:hidden;
+  position:relative;
+}
+.rail-top{display:flex;align-items:center;gap:10px;padding:4px 6px 18px;height:46px}
+.logo{display:flex;align-items:center;gap:10px;overflow:hidden;white-space:nowrap}
+.logo-mark{width:28px;height:28px;flex:none;display:grid;place-items:center}
+.logo-word{font-weight:500;font-size:20px;letter-spacing:-.02em;color:#5f6368}
+.rail-toggle{
+  margin-left:auto;width:30px;height:30px;border-radius:8px;flex:none;
+  display:grid;place-items:center;color:var(--muted);transition:background .2s,color .2s;
+}
+.rail-toggle:hover{background:var(--hover);color:var(--ink)}
+.app.rail-collapsed .rail-top{flex-direction:column;height:auto;gap:12px;padding:6px 6px 16px}
+.app.rail-collapsed .logo{justify-content:center}
+.app.rail-collapsed .logo-word{opacity:0;width:0}
+.app.rail-collapsed .rail-toggle{margin-left:0}
+
+.newbtn{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px;margin-bottom:18px;
+  font-weight:500;font-size:13.5px;box-shadow:var(--shadow-sm);
+  white-space:nowrap;overflow:hidden;transition:.2s;
+}
+.newbtn:hover{box-shadow:var(--shadow-md);background:var(--surface-2)}
+.newbtn .plus{width:20px;height:20px;flex:none;display:grid;place-items:center;font-size:18px;line-height:1;color:var(--muted)}
+.app.rail-collapsed .newbtn{justify-content:center;padding:10px}
+.app.rail-collapsed .newbtn .label{opacity:0;width:0}
+
+.nav-group{margin-bottom:6px}
+.nav-label{
+  font-size:10.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--faint);padding:10px 12px 6px;white-space:nowrap;overflow:hidden;
+}
+.app.rail-collapsed .nav-label{opacity:0;height:8px;padding-top:8px;padding-bottom:0}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 12px;border-radius:9px;color:var(--muted);
+  font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;
+  position:relative;transition:background .16s,color .16s;
+}
+.nav-item:hover{background:var(--hover);color:var(--ink)}
+.nav-item.active{background:var(--pill);color:#0b1f33;font-weight:600}
+.nav-item .ico{width:19px;height:19px;flex:none;display:grid;place-items:center}
+.nav-item .label{flex:1;overflow:hidden;text-overflow:ellipsis}
+.nav-item .agent-dot{
+  width:7px;height:7px;border-radius:50%;flex:none;
+  background:var(--muted);
+}
+.app.rail-collapsed .nav-item{justify-content:center;padding:9px}
+.app.rail-collapsed .nav-item .label,
+.app.rail-collapsed .nav-item .agent-dot{opacity:0;width:0}
+.rail-foot{margin-top:auto;padding:10px 12px 4px;display:flex;align-items:center;gap:10px;white-space:nowrap;overflow:hidden}
+.avatar{width:30px;height:30px;border-radius:50%;flex:none;background:var(--hover);color:var(--muted);display:grid;place-items:center;font-weight:600;font-size:13px}
+.rail-foot .who{overflow:hidden;line-height:1.25}
+.rail-foot .who b{font-size:13px;font-weight:600;display:block}
+.rail-foot .who span{font-size:11.5px;color:var(--faint)}
+.app.rail-collapsed .rail-foot{justify-content:center}
+.app.rail-collapsed .rail-foot .who{opacity:0;width:0}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;background:var(--bg)}
+.toolbar{display:flex;align-items:center;gap:12px;padding:14px 22px;height:68px;flex:none;position:relative}
+.crumbs{display:flex;align-items:center;gap:8px;min-width:0}
+.crumb{color:var(--faint);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.crumb:hover{color:var(--muted)}
+.crumb.here{font-family:"Fraunces",serif;color:var(--ink);font-size:21px;font-weight:600;letter-spacing:-.02em;cursor:default}
+.crumb-sep{color:var(--faint);font-size:13px}
+
+.search{
+  flex:1 1 auto;max-width:560px;margin:0 auto;min-width:0;
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface-2);border:1px solid transparent;
+  border-radius:13px;padding:10px 15px;
+  color:var(--faint);transition:.2s;
+}
+.search:focus-within{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.search>svg{flex:none}
+.search input{border:none;outline:none;background:none;flex:1;font-size:15px;color:var(--ink);font-family:inherit}
+.search input::placeholder{color:var(--faint)}
+.scope-chip{display:inline-flex;align-items:center;gap:6px;flex:none;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:4px 5px 4px 9px;font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+.scope-chip .sc-ic{display:grid;place-items:center;color:var(--muted)}
+.scope-x{width:18px;height:18px;border-radius:5px;display:grid;place-items:center;color:var(--faint);transition:.15s}
+.scope-x:hover{background:var(--hover);color:var(--ink)}
+.search.broad .scope-chip{display:none}
+
+.tbtn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--muted);transition:.18s;flex:none}
+.tbtn:hover{background:var(--hover);color:var(--ink)}
+.tbtn.on{background:var(--sel);color:var(--ink)}
+.seg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px}
+.seg button{width:34px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--faint);transition:.16s}
+.seg button.on{background:var(--pill);color:#0b1f33}
+.spark{flex:none}
+
+/* ============ MULTI-AGENT: presence stack (replaces .agent-pill) ============ */
+.agent-stack{
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface);border:1px solid var(--line-2);
+  color:var(--ink);border-radius:11px;padding:6px 13px 6px 9px;
+  font-weight:600;font-size:13px;transition:.2s;
+}
+.agent-stack:hover{background:var(--hover)}
+.agent-stack.on{background:var(--sel)}
+.agent-stack .stack-avs{display:flex;align-items:center}
+.agent-stack .stack-av{
+  width:24px;height:24px;border-radius:50%;background:var(--surface);
+  border:1.5px solid var(--surface);box-shadow:0 0 0 1px var(--line-2);
+  display:grid;place-items:center;margin-left:-9px;position:relative;
+}
+.agent-stack .stack-av:first-child{margin-left:0}
+.agent-stack .stack-count{white-space:nowrap}
+.agent-stack .stack-count b{font-weight:600}
+
+/* ============ INTERACTION REALISM: Google cluster (monochrome) ============ */
+.gcluster{display:flex;align-items:center;gap:2px}
+.gc-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--muted);transition:.18s;flex:none}
+.gc-btn:hover{background:var(--hover);color:var(--ink)}
+.gc-btn svg{display:block}
+.gc-avatar{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px;flex:none;margin-left:4px;transition:box-shadow .18s}
+.gc-avatar:hover{box-shadow:var(--shadow-md)}
+.waffle{display:grid;grid-template-columns:repeat(3,4px);grid-template-rows:repeat(3,4px);gap:3px}
+.waffle i{width:4px;height:4px;border-radius:50%;background:var(--muted);display:block}
+.gc-btn:hover .waffle i{background:var(--ink)}
+.gc-pop{position:absolute;top:60px;right:18px;z-index:60;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);padding:14px;display:none;animation:rise .18s var(--ease)}
+.gc-pop.open{display:block}
+.gc-grid{display:grid;grid-template-columns:repeat(3,76px);gap:4px}
+.gc-app{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 4px;border-radius:11px;transition:background .14s;color:var(--muted)}
+.gc-app:hover{background:var(--hover);color:var(--ink)}
+.gc-app .gc-app-ico{width:28px;height:28px;display:grid;place-items:center}
+.gc-app .gc-app-lbl{font-size:11px;font-weight:500}
+.gc-menu{min-width:200px;padding:6px}
+.gc-menu .gc-mi{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;font-size:13.5px;color:var(--ink);width:100%;text-align:left;transition:background .14s}
+.gc-menu .gc-mi:hover{background:var(--hover)}
+.gc-menu .gc-mi svg{color:var(--muted);flex:none}
+
+/* ---------- body grid ---------- */
+.body{flex:1;display:flex;min-height:0;padding:0 14px 14px;gap:0}
+.stage-wrap{flex:1;display:flex;min-width:0;min-height:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+
+/* list pane */
+.listpane{width:var(--list-w);flex:none;min-height:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--surface)}
+.listpane.gallery-mode{width:auto;flex:1;border-right:none}
+.listpane.collapsed{display:none}
+.listpane.collapsed + .stage{border-left:none}
+.lp-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;color:var(--faint);
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+}
+.lp-sort{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted)}
+.lp-list{flex:1;overflow-y:auto;padding:0 8px 12px}
+.lp-list::-webkit-scrollbar{width:9px}
+.lp-list::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
+
+.frow{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .14s;position:relative}
+.frow:hover{background:var(--hover)}
+.frow.active{background:var(--sel)}
+.frow.future{opacity:.32;filter:grayscale(.4)}
+.frow.future .fmeta b::after{content:" · not here yet";color:var(--faint);font-weight:500;font-size:10px}
+.fico{width:30px;height:38px;flex:none;border-radius:5px;background:#fff;border:1px solid var(--line);position:relative;display:grid;place-items:end center;overflow:hidden;box-shadow:var(--shadow-sm)}
+.fico::before{content:"";position:absolute;top:4px;left:5px;right:5px;height:1.5px;background:var(--line);box-shadow:0 4px 0 var(--line),0 8px 0 var(--line),0 12px 0 var(--line)}
+.fico .ext{font-size:7px;font-weight:700;color:#fff;background:#5f6368;width:100%;text-align:center;padding:1.5px 0;letter-spacing:.04em;z-index:1}
+/* grey type badge (file-types) — monochrome chrome */
+.ftype{font-size:8px;font-weight:700;letter-spacing:.04em;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);padding:2px 6px;border-radius:5px;flex:none;text-transform:uppercase;white-space:nowrap}
+.fmeta{min-width:0;flex:1;overflow:hidden}
+.fmeta b{font-weight:600;font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fmeta span{font-size:11.5px;color:var(--faint);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.fmeta span svg{vertical-align:-1px;margin-right:1px}
+.frow .star{display:none}
+.frow .cover-tag{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted);background:var(--surface-2);padding:2px 6px;border-radius:5px;flex:none;display:flex;align-items:center;gap:3px}
+
+/* row checkbox + quick actions (additive) */
+.frow .fcheck{
+  width:18px;height:18px;flex:none;border:1.6px solid var(--line-2);border-radius:5px;
+  display:grid;place-items:center;background:var(--surface);
+  opacity:0;transition:opacity .14s,background .14s,border-color .14s;cursor:pointer;
+  position:relative;z-index:2;
+}
+.frow:hover .fcheck{opacity:1}
+.frow .fcheck svg{opacity:0;transition:opacity .12s;color:#fff;width:12px;height:12px}
+.frow.checked .fcheck{opacity:1;background:var(--ink);border-color:var(--ink)}
+.frow.checked .fcheck svg{opacity:1}
+.frow.checked{background:var(--sel)}
+.lp-list.has-selection .frow .fcheck{opacity:1}
+.frow .quick{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%) translateX(4px);
+  display:flex;align-items:center;gap:1px;
+  padding-left:18px;background:linear-gradient(90deg,transparent,var(--hover) 30%);border-radius:8px;
+  opacity:0;pointer-events:none;transition:opacity .14s,transform .14s;
+}
+.frow:hover .quick{opacity:1;pointer-events:auto;transform:translateY(-50%)}
+.frow.active .quick{background:linear-gradient(90deg,transparent,var(--sel) 30%)}
+.frow.checked .quick{opacity:0;pointer-events:none}
+.lp-list.has-selection .frow .quick{opacity:0;pointer-events:none}
+.qbtn{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--muted);transition:.14s;flex:none}
+.qbtn:hover{background:var(--line-2);color:var(--ink)}
+.frow:hover .star{opacity:0}
+
+/* right-click context menu */
+.ctx-menu{
+  position:fixed;z-index:200;min-width:208px;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);
+  padding:6px;display:none;animation:rise .14s var(--ease);
+}
+.ctx-menu.open{display:block}
+.ctx-mi{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:9px 11px;border-radius:8px;font-size:13.5px;color:var(--ink);transition:background .12s}
+.ctx-mi:hover{background:var(--hover)}
+.ctx-mi svg{color:var(--muted);flex:none}
+.ctx-mi .sc{margin-left:auto;font-size:11px;color:var(--faint);font-family:"JetBrains Mono",monospace}
+.ctx-sep{height:1px;background:var(--line);margin:5px 8px}
+
+/* selection action bar */
+.sel-bar{
+  display:none;align-items:center;gap:6px;padding:9px 12px 9px 14px;
+  border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.sel-bar.on{display:flex}
+.sel-bar .sel-count{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap}
+.sel-bar .sel-spacer{flex:1}
+.sel-bar .sel-x{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted);transition:.14s;flex:none;order:-1;margin-right:2px}
+.sel-bar .sel-x:hover{background:var(--hover);color:var(--ink)}
+.selbtn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--muted);transition:.14s;flex:none}
+.selbtn:hover{background:var(--hover);color:var(--ink)}
+.lp-head.hidden-for-sel{display:none}
+
+/* "Ask the agents" search-seed row */
+.ask-row{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;margin:2px 0 6px;
+  border-radius:10px;cursor:pointer;border:1px dashed var(--line-2);
+  background:var(--surface-2);transition:background .14s,border-color .14s;
+}
+.ask-row:hover{background:var(--hover);border-color:var(--muted)}
+.ask-row .ask-ico{width:30px;height:30px;border-radius:8px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.ask-row .ask-t{min-width:0;flex:1;line-height:1.3}
+.ask-row .ask-t b{font-weight:600;font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ask-row .ask-t span{font-size:11.5px;color:var(--faint)}
+.ask-row .ask-go{color:var(--faint);flex:none}
+.search-empty{padding:26px 14px;text-align:center;color:var(--faint);font-size:13px;line-height:1.5}
+
+/* gallery */
+.gallery{flex:1;overflow-y:auto;padding:18px}
+.gallery::-webkit-scrollbar{width:10px}
+.gallery::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
+.cover-hero{
+  display:grid;grid-template-columns:300px 1fr;gap:28px;
+  background:var(--surface-2);
+  border:1px solid var(--line);border-radius:18px;padding:26px;margin-bottom:24px;
+  position:relative;overflow:hidden;
+}
+.cover-badge{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px;margin-bottom:12px}
+.cover-page{
+  background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);
+  aspect-ratio:8.5/11;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:30px 24px;text-align:center;transform:rotate(-1.4deg);transition:.4s var(--ease);overflow:hidden;
+}
+.cover-hero:hover .cover-page{transform:rotate(0) translateY(-4px)}
+.cover-title{font-family:"Fraunces",serif;font-size:30px;font-weight:600;line-height:1.08;letter-spacing:-.02em;margin-bottom:14px}
+.cover-desc{color:var(--muted);font-size:14.5px;line-height:1.55;max-width:46ch}
+.cover-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12.5px;color:var(--muted);font-weight:500}
+.chip b{color:var(--ink);font-weight:600}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden;cursor:pointer;transition:.2s var(--ease)}
+.gcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--line-2)}
+.gcard.future{opacity:.4;filter:grayscale(.5)}
+.gpage{aspect-ratio:8.5/11;background:#fff;margin:12px 12px 0;border:1px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;padding:0;text-align:center;position:relative;overflow:hidden}
+.gpage .pt{font-family:"Fraunces",serif;font-size:11px;font-weight:600;line-height:1.25;border:1px solid var(--ink);padding:14px 8px;width:100%}
+.gcard-foot{padding:11px 13px 13px}
+.gcard-foot b{font-size:12.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcard-foot span{font-size:11px;color:var(--faint)}
+
+/* ===== REAL THUMBNAILS (list + gallery) ===== */
+.thumb{
+  background:#fff;border:1px solid var(--line);overflow:hidden;position:relative;
+  display:flex;flex-direction:column;color:#202124;flex:none;
+  box-shadow:var(--shadow-sm);
+}
+.thumb .t-head{
+  font-size:.9em;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:#9aa0a6;text-align:center;line-height:1.1;
+}
+.thumb .t-titlebox{
+  border:.12em solid var(--ink);text-align:center;font-family:"Fraunces",serif;
+  display:flex;flex-direction:column;justify-content:center;flex:none;
+}
+.thumb .t-titlebox .tl{font-weight:600;line-height:1.18;letter-spacing:.01em}
+.thumb .t-body{display:flex;flex-direction:column;flex:1;justify-content:flex-end}
+.thumb .t-body i{display:block;background:#dfe2e6;border-radius:1px}
+.thumb .t-sign{display:block;background:#b9bec4;border-radius:1px}
+.fthumb{width:30px;height:38px;border-radius:5px;font-size:2.3px;padding:3px 2.5px}
+.fthumb.ctframe{position:relative;overflow:hidden;padding:0;background:#fff;flex:none}
+.fthumb .t-head{margin-bottom:3px}
+.fthumb .t-titlebox{padding:3px 2px;margin:0 auto;width:100%}
+.fthumb .t-titlebox .tl{font-size:3.2em}
+.fthumb .t-body{gap:1.6px;margin-top:3px}
+.fthumb .t-body i{height:1.4px}
+.fthumb .t-sign{height:1.4px;width:55%;margin-top:2px}
+.gthumb{width:100%;height:100%;border:none;box-shadow:none;font-size:5.5px;padding:1.6em 1.4em}
+.gthumb .t-head{margin-bottom:1.6em}
+.gthumb .t-titlebox{padding:1.4em 1em;margin:auto 0;width:100%}
+.gthumb .t-titlebox .tl{font-size:2.1em}
+.gthumb .t-body{gap:.7em;margin-top:1.4em}
+.gthumb .t-body i{height:.55em}
+.gthumb .t-sign{height:.55em;width:50%;margin-top:1em}
+
+/* ===== MULTI-PAGE PREVIEW + ZOOM + PAGE COUNTER ===== */
+.pv-doc{
+  display:flex;flex-direction:column;align-items:center;gap:26px;
+  padding:38px 38px 60px;transform-origin:top center;transition:transform .18s var(--ease);
+}
+.pv-sheet{
+  background:#fff;width:min(620px,100%);aspect-ratio:8.5/11;border-radius:4px;
+  box-shadow:var(--shadow-lg);border:1px solid var(--line);
+  padding:62px 64px;display:flex;flex-direction:column;color:#202124;
+  font-size:11px;line-height:1.62;position:relative;overflow:hidden;
+}
+.pv-sheet .ps-head{
+  font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:#9aa0a6;text-align:center;margin-bottom:30px;
+}
+.pv-sheet h4{
+  font-family:"Fraunces",serif;font-size:17px;font-weight:600;text-align:center;
+  letter-spacing:.01em;line-height:1.3;margin-bottom:6px;
+}
+.pv-sheet .ps-sub{
+  font-family:"Fraunces",serif;font-size:11px;text-align:center;color:#5f6368;
+  margin-bottom:26px;font-style:italic;
+}
+.pv-sheet .ps-art{
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10px;
+  margin:16px 0 5px;color:#202124;
+}
+.pv-sheet p{margin-bottom:11px;text-align:justify}
+.pv-sheet p .lead{font-variant:small-caps;font-weight:600;letter-spacing:.02em}
+.pv-sheet .ps-sign{margin-top:auto;padding-top:26px;display:grid;gap:18px}
+.pv-sheet .ps-sigline{display:flex;flex-direction:column;gap:3px}
+.pv-sheet .ps-sigline .rule{height:1px;background:#202124;width:70%}
+.pv-sheet .ps-sigline .cap{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#5f6368}
+.pv-sheet .ps-notary{
+  margin-top:22px;border:1px solid var(--line-2);border-radius:3px;padding:12px 14px;
+  font-size:9.5px;color:#5f6368;line-height:1.55;
+}
+.pv-sheet .ps-pageno{
+  position:absolute;bottom:20px;left:0;right:0;text-align:center;
+  font-size:8.5px;color:#9aa0a6;letter-spacing:.06em;
+}
+.pv-tools{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;z-index:20;
+  background:var(--surface);border:1px solid var(--line-2);border-radius:11px;
+  box-shadow:var(--shadow-md);padding:5px 6px;
+}
+.pv-tools .pt-count{
+  font-size:11.5px;font-weight:600;color:var(--muted);padding:0 8px;
+  font-family:"JetBrains Mono",monospace;white-space:nowrap;
+}
+.pv-tools .pt-div{width:1px;height:18px;background:var(--line);margin:0 2px}
+.pv-tools .zbtn{
+  width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  color:var(--muted);font-size:15px;line-height:1;transition:.15s;
+}
+.pv-tools .zbtn:hover{background:var(--hover);color:var(--ink)}
+.pv-tools .zlvl{
+  font-size:11.5px;font-weight:600;color:var(--ink);min-width:42px;text-align:center;
+  font-family:"JetBrains Mono",monospace;
+}
+
+/* ============ COLORFUL FILE-TYPE CONTENTS (color allowed: file contents) ============ */
+.ct-thumb{position:absolute;inset:0;overflow:hidden;background:#fff}
+.ct-thumb > .ct-scale{transform-origin:top left;pointer-events:none}
+
+/* 1) GEMINI BRIEF */
+.ct-brief{font-family:"Fraunces",serif;color:#202124;background:#fff}
+.ct-brief .b-kicker{font-family:"Hanken Grotesk",sans-serif;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9168C0;display:flex;align-items:center;gap:5px}
+.ct-brief .b-title{font-size:23px;font-weight:600;line-height:1.05;letter-spacing:-.02em;margin:9px 0 4px}
+.ct-brief .b-sub{font-family:"Hanken Grotesk",sans-serif;font-size:11px;color:#5f6368;line-height:1.4}
+.ct-brief .b-rule{height:1px;background:#e8eaed;margin:14px 0}
+.ct-brief h4{font-family:"Hanken Grotesk",sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#80868b;margin:0 0 6px}
+.ct-brief p{font-family:"Hanken Grotesk",sans-serif;font-size:12px;line-height:1.55;color:#3c4043;margin:0 0 10px}
+.ct-brief .b-list{font-family:"Hanken Grotesk",sans-serif;font-size:12px;line-height:1.6;color:#3c4043;margin:0 0 12px;padding-left:0;list-style:none}
+.ct-brief .b-list li{position:relative;padding-left:18px;margin-bottom:5px}
+.ct-brief .b-list li::before{content:"";position:absolute;left:2px;top:7px;width:5px;height:5px;border-radius:50%;background:#9168C0}
+.ct-rec{border-left:3px solid #D93025;background:#FCE8E6;border-radius:0 8px 8px 0;padding:12px 14px;margin:6px 0 12px}
+.ct-rec .r-head{font-family:"Hanken Grotesk",sans-serif;font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#C5221F;display:flex;align-items:center;gap:6px}
+.ct-rec .r-body{font-family:"Hanken Grotesk",sans-serif;font-size:12.5px;line-height:1.5;color:#5f1714;margin-top:6px;font-weight:500}
+.ct-rec .r-dot{width:6px;height:6px;border-radius:50%;background:#D93025;flex:none}
+
+/* 2) IMAGE — photographed notarized signature page */
+.ct-image{position:relative;width:100%;height:100%;
+  background:radial-gradient(120% 90% at 30% 0%, #fbf7ee 0%, #f0e7d4 55%, #d9cdb2 100%);
+  overflow:hidden;display:flex;align-items:center;justify-content:center}
+.ct-image .ph-paper{position:absolute;inset:8% 9%;background:#fffdf7;border-radius:3px;
+  box-shadow:0 10px 30px rgba(60,40,10,.28), 0 2px 6px rgba(60,40,10,.18);transform:rotate(-1.5deg)}
+.ct-image .ph-ink{position:absolute;left:14%;bottom:30%;width:54%;height:auto}
+.ct-image .ph-line{position:absolute;left:14%;bottom:28%;width:52%;height:1.5px;background:#3a3026;opacity:.5}
+.ct-image .ph-cap{position:absolute;left:14%;bottom:22%;font-family:"JetBrains Mono",monospace;font-size:9px;color:#6b5d45;letter-spacing:.02em}
+.ct-image .ph-seal{position:absolute;right:13%;bottom:20%;width:84px;height:84px;border-radius:50%;
+  border:2px solid #B0322B;color:#B0322B;display:grid;place-items:center;text-align:center;
+  transform:rotate(-9deg);opacity:.9;
+  box-shadow:inset 0 0 0 4px rgba(176,50,43,.18), 0 1px 2px rgba(0,0,0,.15);
+  background:radial-gradient(circle, rgba(255,255,255,.5), rgba(214,180,120,.18))}
+.ct-image .ph-seal .s-top{font-family:"Hanken Grotesk",sans-serif;font-size:6.5px;font-weight:800;letter-spacing:.06em;line-height:1.15;text-transform:uppercase}
+.ct-image .ph-seal .s-star{font-size:11px;line-height:1;margin:1px 0}
+.ct-image .ph-glow{position:absolute;inset:0;background:linear-gradient(115deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 28%);pointer-events:none}
+
+/* 3) SHEET — Asset & Beneficiary Inventory */
+.ct-sheet{width:100%;background:#fff;font-family:"Hanken Grotesk",sans-serif}
+.ct-sheet .sh-bar{display:flex;align-items:center;gap:7px;background:#0F9D58;color:#fff;
+  padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.ct-sheet .sh-bar svg{flex:none}
+.ct-sheet table{border-collapse:collapse;width:100%;font-size:11px;table-layout:fixed}
+.ct-sheet thead th{background:#E6F4EA;color:#0B6B3A;text-align:left;font-weight:700;
+  font-size:9.5px;letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border:1px solid #CEEAD6;white-space:nowrap}
+.ct-sheet tbody td{padding:6px 8px;border:1px solid #ECEFF1;color:#3c4043;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-sheet tbody tr:nth-child(even) td{background:#FAFDFB}
+.ct-sheet td .amt{font-family:"JetBrains Mono",monospace;font-size:10.5px}
+.ct-sheet .st-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;
+  font-size:9.5px;font-weight:700;letter-spacing:.02em}
+.ct-sheet .st-pill::before{content:"";width:6px;height:6px;border-radius:50%}
+.ct-sheet .st-funded{background:#E6F4EA;color:#137333}
+.ct-sheet .st-funded::before{background:#1E8E3E}
+.ct-sheet .st-pending{background:#FEF7E0;color:#A06A00}
+.ct-sheet .st-pending::before{background:#F9AB00}
+.ct-sheet .sh-foot{font-size:9.5px;color:#80868b;padding:6px 12px;border-top:1px solid #ECEFF1;
+  display:flex;justify-content:space-between}
+
+/* colorful contents inside the multi-page preview sheet */
+.pv-sheet.pv-sheet-bleed{padding:0;overflow:hidden;background:#fff;flex:none;aspect-ratio:auto;width:min(620px,72vw);height:min(803px,86vh)}
+.pv-sheet.pv-sheet-gdoc{text-align:left;font-family:"Hanken Grotesk",sans-serif;padding:60px 66px;flex:none;aspect-ratio:auto;height:auto;min-height:min(760px,82vh);width:min(660px,100%);overflow:visible}
+.pv-sheet-gdoc .gd-title{font-family:"Fraunces",serif;font-size:27px;font-weight:600;color:#1f1f1f;margin-bottom:5px;letter-spacing:-.01em}
+.pv-sheet-gdoc .gd-by{font-size:12px;color:#80868b;margin-bottom:26px}
+.pv-sheet-gdoc h3{font-size:14.5px;font-weight:700;color:#1a73e8;margin:20px 0 7px}
+.pv-sheet-gdoc p{font-size:12.5px;line-height:1.75;color:#3c4043;margin-bottom:6px;text-align:left}
+.pv-sheet.pv-sheet-app{padding:0;overflow:hidden;background:#fff;flex:none;aspect-ratio:auto;width:min(680px,80vw);height:min(820px,86vh);position:relative}
+.pv-sheet-app iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+.pv-applabel{position:absolute;top:11px;right:11px;z-index:2;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+/* figma-style live presence + cursors */
+.pv-presence{display:flex;align-items:center;margin-right:6px}
+.pv-presence .pa{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;border:2px solid var(--surface);margin-left:-7px;box-shadow:var(--shadow-sm)}
+.pv-presence .pa:first-child{margin-left:0}
+.pv-cursors{position:absolute;left:0;right:0;top:58px;bottom:0;overflow:hidden;pointer-events:none;z-index:26}
+.fcur{position:absolute;top:0;left:0;transition:transform 1.6s cubic-bezier(.33,0,.2,1);display:flex;align-items:flex-start;gap:1px;will-change:transform}
+.fcur svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}
+.fcur-lbl{font-size:10.5px;font-weight:600;color:#fff;padding:2px 7px;border-radius:9px;border-top-left-radius:2px;white-space:nowrap;transform:translateY(1px);box-shadow:0 1px 3px rgba(0,0,0,.22)}
+.pv-sheet.pv-sheet-bleed .ct-image{aspect-ratio:auto;height:100%}
+.pv-sheet.pv-sheet-bleed .ct-sheet{padding:0;height:100%;display:flex;flex-direction:column}
+.pv-sheet.pv-sheet-bleed .ct-sheet table{flex:none}
+.pv-sheet.pv-sheet-bleed .ct-sheet .sh-bar{padding:14px 22px;font-size:14px}
+.pv-sheet.pv-sheet-bleed .ct-sheet thead th{font-size:11px;padding:10px 14px}
+.pv-sheet.pv-sheet-bleed .ct-sheet tbody td{padding:11px 14px;font-size:13px}
+.pv-sheet.pv-sheet-bleed .ct-sheet td .amt{font-size:12.5px}
+.pv-sheet.pv-sheet-bleed .ct-sheet .st-pill{font-size:11px;padding:3px 11px}
+.pv-sheet.pv-sheet-bleed .ct-sheet .sh-foot{font-size:11.5px;padding:12px 22px;margin-top:auto}
+.pv-sheet.pv-sheet-bleed .ct-image .ph-seal{width:120px;height:120px}
+.pv-sheet.pv-sheet-bleed .ct-image .ph-seal .s-top{font-size:9px}
+.pv-sheet.pv-sheet-bleed .ct-image .ph-seal .s-star{font-size:16px}
+.pv-sheet.pv-sheet-bleed .ct-image .ph-cap{font-size:13px}
+.pv-sheet.pv-sheet-brief{padding:48px 54px;overflow-y:auto}
+.pv-sheet.pv-sheet-brief .ct-brief .b-title{font-size:34px}
+.pv-sheet.pv-sheet-brief .ct-brief .b-sub{font-size:13px}
+.pv-sheet.pv-sheet-brief .ct-brief p,.pv-sheet.pv-sheet-brief .ct-brief .b-list{font-size:14px}
+.pv-sheet.pv-sheet-brief .ct-rec .r-body{font-size:14.5px}
+
+/* ===== SOURCE CHIPS (provenance) — monochrome only ===== */
+.src-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:7px;padding:3px 8px;font-size:11px;font-weight:600;
+  color:var(--muted);line-height:1;white-space:nowrap;
+}
+.src-chip svg{flex:none;color:var(--faint)}
+.src-chip b{color:var(--ink);font-weight:600}
+.fev-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.pv-context .src-chip{margin-left:auto;flex:none}
+
+/* ===== OPEN ITEMS (actionable tasks) ===== */
+.openitems{display:flex;flex-direction:column;gap:12px;margin-bottom:30px}
+.oi-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;display:flex;gap:14px;align-items:flex-start;
+  transition:box-shadow .2s var(--ease),opacity .35s var(--ease),border-color .2s;
+  position:relative;overflow:hidden;
+}
+.oi-card:hover{box-shadow:var(--shadow-sm);border-color:var(--line-2)}
+.oi-card.resolved{opacity:.5}
+.oi-card.resolved .oi-actions{display:none}
+.oi-avatar{
+  width:34px;height:34px;border-radius:9px;flex:none;
+  background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--muted);
+}
+.oi-body{flex:1;min-width:0}
+.oi-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.oi-top b{font-weight:600;font-size:13.5px;color:var(--ink)}
+.oi-raisedby{font-size:11px;color:var(--faint);font-weight:500;display:flex;align-items:center;gap:5px}
+.oi-raisedby svg{color:var(--faint)}
+.oi-desc{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+.oi-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.oi-btn{
+  background:var(--surface);border:1px solid var(--line-2);border-radius:8px;
+  padding:7px 12px;font-size:12px;font-weight:600;color:var(--ink);
+  display:flex;align-items:center;gap:6px;transition:.18s;
+}
+.oi-btn:hover{background:var(--hover)}
+.oi-btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.oi-btn.primary:hover{background:#000}
+.oi-done{
+  margin-top:11px;font-size:12px;font-weight:600;color:var(--muted);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.oi-done svg{color:var(--ink)}
+.oi-count{
+  font-size:11px;font-weight:600;color:var(--faint);
+  background:var(--surface-2);border:1px solid var(--line);
+  border-radius:7px;padding:2px 8px;letter-spacing:0;text-transform:none;
+}
+.section-h.with-count{align-items:center}
+.section-h.with-count .oi-count{margin-left:10px;flex:none}
+
+/* ---------- stage ---------- */
+.stage{flex:1;min-width:0;overflow-y:auto;position:relative;border-left:1px solid var(--line)}
+.listpane.gallery-mode + .stage.is-home{border-left:none}
+.stage::-webkit-scrollbar{width:10px}
+.stage::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
+
+/* folder home */
+.home{padding:34px 40px 60px;max-width:880px;margin:0 auto;animation:rise .5s var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.home-hd{display:flex;align-items:flex-start;gap:18px;margin-bottom:8px}
+.home-hd h1{font-family:"Fraunces",serif;font-size:38px;font-weight:600;letter-spacing:-.025em;line-height:1}
+.home-sub{color:var(--muted);font-size:15px;margin:14px 0 30px;line-height:1.5;max-width:60ch}
+.agent-card{
+  background:var(--surface-2);
+  border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:30px;position:relative;overflow:hidden;
+}
+.agent-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.agent-avatar{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.agent-head .nm{font-weight:700;font-size:15px}
+.agent-head .st{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;font-weight:500}
+.agent-summary{font-size:14.5px;line-height:1.6;color:var(--ink)}
+.agent-summary b{font-weight:600}
+.agent-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+.aabtn{background:var(--surface);border:1px solid var(--line-2);border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;transition:.18s}
+.aabtn:hover{background:var(--hover)}
+.aabtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.aabtn.primary:hover{background:var(--accent-press)}
+
+.section-h{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:0 0 16px;display:flex;align-items:center;gap:10px}
+.section-h::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* feed */
+.feed{position:relative;padding-left:4px}
+.fev{display:flex;gap:14px;padding-bottom:22px;position:relative}
+.fev:last-child{padding-bottom:0}
+.fev-rail{position:relative;flex:none;width:34px;display:flex;justify-content:center}
+.fev-rail::before{content:"";position:absolute;top:30px;bottom:-22px;width:2px;background:var(--line)}
+.fev:last-child .fev-rail::before{display:none}
+.fev-dot{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;z-index:1;font-size:13px;font-weight:600}
+.fev-dot.agent{background:var(--surface);border:1px solid var(--line)}
+.fev-dot.person{background:var(--hover);color:var(--muted)}
+.fev-body{flex:1;padding-top:3px}
+.fev-top{display:flex;align-items:baseline;gap:10px}
+.fev-top b{font-weight:600;font-size:13.5px}
+.fev-top .when{margin-left:auto;font-size:11.5px;color:var(--faint);font-family:"JetBrains Mono",monospace}
+.fev-desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+.fev-attach{display:inline-flex;align-items:center;gap:8px;margin-top:9px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:500;color:var(--muted)}
+.fev-attach .undo{margin-left:8px;color:var(--ink);font-weight:600;cursor:pointer}
+
+/* ---------- preview ---------- */
+.preview{display:none;flex-direction:column;height:100%;animation:rise .35s var(--ease);position:relative}
+.pv-bar{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line);flex:none}
+.pv-bar .ext-tag{font-size:9px;font-weight:700;color:#fff;background:#5f6368;padding:3px 7px;border-radius:5px;letter-spacing:.04em}
+.pv-bar h2{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.pv-act{display:flex;gap:4px}
+.pv-canvas{flex:1;overflow-y:auto;background:var(--canvas);padding:0;display:flex;flex-direction:column;align-items:center;gap:0;position:relative}
+.pv-canvas::-webkit-scrollbar{width:10px}
+.pv-canvas::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--canvas)}
+
+.pv-context{flex:none;border-top:1px solid var(--line);background:var(--surface);padding:14px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pv-context .agent-avatar{width:30px;height:30px;border-radius:8px}
+.pv-context .ctx-text{font-size:13px;color:var(--muted);line-height:1.45;flex:1;min-width:200px}
+.pv-context .ctx-text b{color:var(--ink);font-weight:600}
+
+.stage-empty-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--faint);display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);padding:7px 13px;border-radius:20px;box-shadow:var(--shadow-sm)}
+kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--surface-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--muted)}
+
+/* ---------- info / activity panel ---------- */
+.infopanel{width:0;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;transition:width .42s var(--ease)}
+.infopanel.open{width:328px}
+.ip-head{display:flex;align-items:flex-start;gap:10px;padding:18px 18px 14px;border-bottom:1px solid var(--line);flex:none}
+.ip-title{font-weight:700;font-size:15px}
+.ip-sub{font-size:11.5px;color:var(--faint);margin-top:2px}
+.ip-head .tbtn{margin-left:auto}
+.ip-body{flex:1;overflow-y:auto;padding:16px 18px 24px}
+.ip-body::-webkit-scrollbar{width:8px}
+.ip-body::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--surface)}
+.ip-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.ip-stat{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.ip-stat .k{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.ip-stat .v{font-size:14px;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px}
+.ip-time-hd{display:flex;align-items:flex-start;gap:10px;margin:0 0 20px;padding:13px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px}
+.ip-time-hd .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.ip-time-hd .v{font-size:20px;font-weight:600;margin-top:2px;letter-spacing:-.01em}
+.ip-hint{font-size:11.5px;color:var(--faint);margin-top:4px}
+.ip-now{margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);background:none;padding:4px 0;white-space:nowrap}
+.vtl{position:relative;padding-left:34px}
+.vtl-line{position:absolute;left:15px;width:2px;background:var(--line);border-radius:2px;z-index:0}
+.vtl-line-fill{position:absolute;left:15px;width:2px;background:var(--accent);opacity:.4;border-radius:2px;z-index:0;transition:top .25s var(--ease),height .25s var(--ease)}
+.vtl-tick{position:absolute;left:11px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--line-2);transform:translateY(-50%);z-index:1}
+.vtl-knob{position:absolute;left:8px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--accent);box-shadow:var(--shadow-md);transform:translateY(-50%);z-index:3;cursor:grab;transition:top .25s var(--ease)}
+.vtl-knob:active{cursor:grabbing;transition:none}
+.vtl-rows{position:relative}
+.vtl-row{padding:0 0 22px;cursor:pointer;position:relative}
+.vtl-row:last-child{padding-bottom:0}
+.vtl-top{display:flex;align-items:center;gap:8px;min-height:18px}
+.vtl-top b{font-weight:600;font-size:13px}
+.vtl-top .when{margin-left:auto;font-size:11px;color:var(--faint);font-family:"JetBrains Mono",monospace}
+.vtl-mark{width:18px;height:18px;flex:none;display:grid;place-items:center}
+.vtl-init{font-size:9px;font-weight:700;color:var(--muted);background:var(--hover);border-radius:50%}
+.vtl-desc{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:3px;padding-left:26px}
+.vtl-row.future{opacity:.38}
+.vtl-row.asof .vtl-top b{color:var(--accent)}
+
+/* ---------- agent drawer ---------- */
+.drawer{width:0;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;transition:width .42s var(--ease)}
+.drawer.open{width:384px}
+.dw-head{display:flex;align-items:center;gap:12px;padding:18px 20px 14px;flex:none}
+.dw-head .agent-avatar{width:34px;height:34px;border-radius:9px}
+.dw-head .nm{font-weight:700;font-size:15px;flex:1}
+.dw-head .nm span{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
+.dw-tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
+.dw-tab{padding:10px 12px;font-size:13px;font-weight:600;color:var(--faint);position:relative;transition:color .18s;white-space:nowrap}
+.dw-tab:hover{color:var(--muted)}
+.dw-tab.on{color:var(--accent)}
+.dw-tab.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+.dw-panel{flex:1;overflow-y:auto;padding:18px 20px;display:none}
+.dw-panel.on{display:block}
+.dw-panel::-webkit-scrollbar{width:8px}
+.dw-panel::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:2px solid var(--surface)}
+
+.chat{display:flex;flex-direction:column;height:100%}
+.chat-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:8px}
+.chat-scroll::-webkit-scrollbar{width:8px}
+.chat-scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px}
+.bubble{max-width:88%;font-size:13.5px;line-height:1.55;padding:11px 14px;border-radius:14px}
+.bubble.agent{background:var(--surface-2);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:5px}
+.bubble.user{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+.bubble.agent b{color:var(--ink);font-weight:600}
+.chat-suggest{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.sugg{font-size:12px;border:1px solid var(--line-2);background:var(--surface);border-radius:16px;padding:6px 12px;color:var(--muted);transition:.16s}
+.sugg:hover{background:var(--hover);color:var(--ink)}
+.chat-input{display:flex;gap:8px;align-items:flex-end;border:1px solid var(--line-2);border-radius:13px;padding:8px 8px 8px 14px;margin-top:12px;background:var(--surface);transition:.2s}
+.chat-input:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chat-input textarea{flex:1;border:none;outline:none;background:none;resize:none;font-family:inherit;font-size:13.5px;max-height:90px;line-height:1.4;padding:4px 0}
+.send{width:34px;height:34px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none;transition:.2s}
+.send:hover{background:#000}
+
+.det-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+.det-row:last-child{border:none}
+.det-row .k{color:var(--faint)}
+.det-row .v{font-weight:500;text-align:right}
+.det-row .v.mono{font-family:"JetBrains Mono",monospace;font-size:12px}
+
+/* ============ MULTI-AGENT: drawer roster ============ */
+.dw-back{
+  display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+  color:var(--muted);padding:0;margin-right:auto;transition:.16s;
+}
+.dw-back:hover{color:var(--ink)}
+.roster{display:flex;flex-direction:column;gap:0}
+.roster-newbtn{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:var(--surface);border:1.5px dashed var(--line-2);border-radius:13px;
+  padding:14px 16px;margin-bottom:18px;text-align:left;transition:.2s;
+}
+.roster-newbtn:hover{border-color:var(--muted);background:var(--surface-2);box-shadow:var(--shadow-sm)}
+.roster-newbtn .rn-spark{
+  width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;
+  background:var(--surface-2);border:1px solid var(--line);position:relative;
+}
+.roster-newbtn .rn-spark::after{
+  content:"+";position:absolute;right:-4px;bottom:-4px;width:16px;height:16px;border-radius:50%;
+  background:var(--ink);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;line-height:1;
+}
+.roster-newbtn .rn-txt b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
+.roster-newbtn .rn-txt span{font-size:12px;color:var(--muted)}
+.roster-h{
+  font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--faint);margin:4px 0 10px;
+}
+.rcard{
+  display:flex;align-items:flex-start;gap:12px;
+  border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:10px;
+  cursor:pointer;transition:.18s var(--ease);background:var(--surface);position:relative;
+}
+.rcard:hover{border-color:var(--line-2);box-shadow:var(--shadow-sm);background:var(--surface-2)}
+.rcard.paused{opacity:.62}
+.rcard-av{
+  width:38px;height:38px;border-radius:11px;flex:none;display:grid;place-items:center;
+  background:var(--surface-2);border:1px solid var(--line);
+}
+.rcard.paused .rcard-av{filter:grayscale(1)}
+.rcard-main{min-width:0;flex:1}
+.rcard-top{display:flex;align-items:center;gap:8px}
+.rcard-top b{font-size:14px;font-weight:600;color:var(--ink)}
+.rcard-role{font-size:11px;color:var(--faint);font-weight:600;letter-spacing:.02em}
+.scope-b{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.scope-b.global{color:var(--accent);background:var(--accent-soft);border-color:rgba(11,87,208,.18)}
+.dw-head .nm .scope-b{margin-left:6px}
+/* agent task composer + rows */
+.task-compose{display:flex;align-items:center;gap:7px;border:1px solid var(--line-2);border-radius:12px;padding:6px 6px 6px 8px;background:var(--surface)}
+.task-compose:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tc-agent{display:inline-flex;align-items:center;gap:5px;flex:none;font-size:12px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;white-space:nowrap}
+.tc-agent:hover{background:var(--hover)}
+.task-compose input{flex:1;min-width:0;border:none;outline:none;background:none;font-family:inherit;font-size:13px;color:var(--ink)}
+.task-compose input::placeholder{color:var(--faint)}
+.tc-send{width:32px;height:32px;flex:none;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center}
+.tc-send:hover{background:var(--accent-press)}
+.tk-row{display:flex;align-items:flex-start;gap:11px;padding:10px 2px;border-top:1px solid var(--line)}
+.tk-row:first-of-type{border-top:none}
+.tk-ic{width:20px;height:20px;flex:none;border-radius:50%;display:grid;place-items:center;margin-top:1px}
+.tk-ic.done{background:#1e8e3e}
+.tk-ic.work{border:2px solid var(--accent);border-right-color:transparent;animation:tkspin .8s linear infinite}
+@keyframes tkspin{to{transform:rotate(360deg)}}
+.tk-txt{font-size:13.5px;color:var(--ink);line-height:1.4}
+.tk-by{font-size:11.5px;color:var(--faint);display:flex;align-items:center;gap:5px;margin-top:3px}
+.tk-row.working .tk-txt{color:var(--muted)}
+.rcard-last{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:3px}
+.rcard-meta{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:11px;color:var(--faint);font-family:"JetBrains Mono",monospace}
+.rcard-meta .dot{width:5px;height:5px;border-radius:50%;background:var(--line-2)}
+.rcard-meta .by{font-family:"Hanken Grotesk";letter-spacing:0}
+.rcard-toggle{flex:none;margin-left:auto;align-self:center}
+.rtoggle{
+  width:38px;height:22px;border-radius:12px;background:var(--line-2);position:relative;transition:.2s;flex:none;
+}
+.rtoggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:var(--shadow-sm);transition:.2s var(--ease)}
+.rtoggle.on{background:var(--ink)}
+.rtoggle.on::after{transform:translateX(16px)}
+
+/* ============ MULTI-AGENT: spin-up panel ============ */
+.spawn{display:flex;flex-direction:column;gap:16px}
+.spawn-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+.spawn-field input,.spawn-field textarea{
+  width:100%;border:1px solid var(--line-2);border-radius:11px;padding:10px 13px;
+  font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--surface);outline:none;transition:.18s;resize:none;line-height:1.45;
+}
+.spawn-field input:focus,.spawn-field textarea:focus{border-color:var(--muted);box-shadow:var(--shadow-sm)}
+.spawn-field input::placeholder,.spawn-field textarea::placeholder{color:var(--faint)}
+.spawn-seg{display:flex;background:var(--surface-2);border-radius:11px;padding:3px;gap:2px}
+.spawn-seg button{flex:1;padding:8px 6px;border-radius:8px;font-size:12px;font-weight:600;color:var(--faint);transition:.16s}
+.spawn-seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.spawn-scope{
+  display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:10px 13px;font-weight:500;
+}
+.spawn-scope b{color:var(--ink);font-weight:600}
+.spawn-scope .lock{margin-left:auto;color:var(--faint)}
+.spawn-actions{display:flex;gap:9px;margin-top:4px}
+.spawn-actions .aabtn{flex:1;justify-content:center}
+
+/* ---------- time machine ---------- */
+.timebar{
+  position:absolute;left:14px;right:14px;bottom:14px;
+  background:var(--ink);color:#fff;border-radius:14px;box-shadow:var(--shadow-lg);
+  padding:14px 20px;transform:translateY(160%);opacity:0;transition:.42s var(--ease);z-index:40;
+  display:flex;align-items:center;gap:20px;
+}
+.timebar.open{transform:none;opacity:1}
+.tm-label{flex:none;display:flex;flex-direction:column;gap:2px}
+.tm-label .k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9aa0a6}
+.tm-label .v{font-family:"Fraunces",serif;font-size:19px;font-weight:600}
+.tm-track{flex:1;position:relative;height:40px;display:flex;align-items:center}
+.tm-range{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:#3c4043;outline:none}
+.tm-range::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.tm-range::-webkit-slider-thumb:active{cursor:grabbing}
+.tm-ticks{position:absolute;left:0;right:0;top:4px;height:8px;pointer-events:none}
+.tm-tick{position:absolute;width:2px;height:8px;background:#9aa0a6;border-radius:2px;transform:translateX(-1px)}
+.tm-tick::after{content:attr(data-label);position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:9.5px;color:#9aa0a6;white-space:nowrap;font-family:"JetBrains Mono",monospace}
+.tm-now{font-size:11.5px;color:#9aa0a6;flex:none;display:flex;align-items:center;gap:8px}
+.tm-now button{color:#fff;font-weight:600;font-size:12px}
+.tm-close{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#9aa0a6;flex:none}
+.tm-close:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* ---------- carousel (cover flow) ---------- */
+.carousel{flex:1;display:grid;grid-template-rows:minmax(0,1fr) auto auto;background:var(--canvas);min-height:0}
+.cf-stage{position:relative;overflow:hidden;min-height:0}
+.cf-track{position:absolute;left:50%;top:50%;display:flex;align-items:center;gap:48px;transition:transform .5s var(--ease);will-change:transform}
+.cf-card{height:min(78vh,720px);aspect-ratio:8.5/11;flex:none;cursor:pointer;transition:transform .5s var(--ease),opacity .5s var(--ease),filter .5s var(--ease)}
+.cf-card:not(.focus){transform:scale(.62);opacity:.5;filter:grayscale(.4)}
+.cf-card.focus{transform:scale(1)}
+.cf-card .pv-sheet,.cf-card .cf-page{height:100%!important;width:100%!important;margin:0;box-shadow:var(--shadow-lg)}
+.cf-page{height:100%;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;padding:9% 9% 8%;text-align:center;overflow:hidden}
+.cf-page .cf-head{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#9aa0a6;font-weight:700;margin-bottom:10%}
+.cf-page .cf-titlebox{font-family:"Fraunces",serif;border:1.5px solid var(--ink);padding:8% 6%;margin:auto 0;font-size:22px;font-weight:600;line-height:1.7}
+.cf-page .cf-lines{margin-top:auto;padding-top:8%}
+.cf-page .cf-lines i{display:block;height:7px;background:#eef0f2;border-radius:3px;margin-bottom:11px}
+.cf-meta{text-align:center;padding:10px 0 14px}
+.cf-meta b{font-family:"Fraunces",serif;font-size:19px;font-weight:600;display:block;letter-spacing:-.01em}
+.cf-meta span{font-size:12px;color:var(--faint);display:inline-flex;align-items:center;gap:5px;margin-top:3px}
+.cf-strip{height:96px;display:flex;gap:9px;overflow-x:auto;padding:14px 18px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
+.cf-strip::-webkit-scrollbar{height:8px}
+.cf-strip::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px}
+.cf-thumb{width:52px;height:66px;flex:none;background:#fff;border:1px solid var(--line);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:6px;overflow:hidden;transition:.18s;opacity:.65}
+.cf-thumb:hover{opacity:1}
+.cf-thumb.on{outline:2px solid var(--accent);outline-offset:1px;opacity:1}
+.cf-tt{font-family:"Fraunces",serif;font-size:5px;line-height:1.35;font-weight:600;text-align:center;color:var(--ink)}
+.cf-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-md);display:grid;place-items:center;color:var(--ink);z-index:3;transition:.18s}
+.cf-nav:hover{background:var(--hover)}
+.cf-nav.prev{left:22px}.cf-nav.next{right:22px}
+
+svg{display:block}
+.ghost{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- global gradient defs: the ONLY accent in the app -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#4285F4"/>
+    <stop offset=".5" stop-color="#9168C0"/>
+    <stop offset="1" stop-color="#D96570"/>
+  </linearGradient>
+</defs></svg>
+
+<div class="app rail-collapsed" id="app">
+
+  <!-- ======= RAIL ======= -->
+  <aside class="rail">
+    <div class="rail-top">
+      <div class="logo">
+        <span class="logo-mark">
+          <svg width="26" height="23" viewBox="0 0 87.3 78" aria-label="Google Drive">
+            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+          </svg>
+        </span>
+        <span class="logo-word">Drive</span>
+      </div>
+      <button class="rail-toggle" id="railToggle" title="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+
+    <button class="newbtn"><span class="plus">+</span><span class="label">New</span></button>
+
+    <div class="nav-group">
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7M5 10v9a1 1 0 001 1h12a1 1 0 001-1v-9"/></svg></span><span class="label">Home</span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span><span class="label">Recents</span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></span><span class="label">Starred</span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">My Drive</div>
+      <div class="nav-item active"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Estate docs</span><span class="agent-dot" title="Has agents"></span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">School decision</span><span class="agent-dot"></span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Home renovation</span><span class="agent-dot"></span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span><span class="label">Taxes 2025</span><span class="agent-dot"></span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Spaces</div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c3 0 5 2 5 5"/></svg></span><span class="label">Shared with me</span></div>
+      <div class="nav-item"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18l-2 13a2 2 0 01-2 2H7a2 2 0 01-2-2z"/><path d="M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2"/></svg></span><span class="label">Trash</span></div>
+    </div>
+
+    <div class="rail-foot">
+      <div class="avatar">D</div>
+      <div class="who"><b>David Wurtz</b><span>4.2 GB of 2 TB</span></div>
+    </div>
+  </aside>
+
+  <!-- ======= MAIN ======= -->
+  <div class="main">
+    <div class="toolbar">
+      <div class="crumbs">
+        <span class="crumb">My Drive</span>
+        <span class="crumb-sep">›</span>
+        <span class="crumb here" id="folderCrumb">Estate docs</span>
+      </div>
+      <div class="search" id="search">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <span class="scope-chip" id="scopeChip">
+          <span class="sc-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
+          Estate docs
+          <button class="scope-x" onclick="clearScope()" title="Search everywhere"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </span>
+        <input id="searchInput" placeholder="Ask or search…">
+      </div>
+      <div class="seg" id="viewSeg">
+        <button data-view="list" class="on" title="List + preview"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+        <button data-view="gallery" title="Cover / gallery"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/></svg></button>
+        <button data-view="carousel" title="Carousel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="11" rx="2"/><path d="M5 20h.01M9 20h.01M13 20h.01M17 20h.01" stroke-linecap="round"/></svg></button>
+      </div>
+      <button class="tbtn on" id="infoBtn" title="Folder activity"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5" stroke-linecap="round"/><circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></svg></button>
+
+      <!-- Google cluster (monochrome) -->
+      <div class="gcluster">
+        <button class="gc-btn" id="waffleBtn" title="Google apps" aria-label="Google apps">
+          <span class="waffle"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </button>
+        <button class="gc-btn" id="gearBtn" title="Settings" aria-label="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 010-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H22a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+        <button class="gc-avatar" id="acctBtn" title="David Wurtz · david@davidwurtz.com">D</button>
+      </div>
+
+      <!-- multi-agent presence stack (keeps id=agentBtn for existing wiring) -->
+      <button class="agent-stack" id="agentBtn" title="Agents in this folder">
+        <span class="stack-avs" id="stackAvs"></span>
+        <span class="stack-count" id="stackCount"><b>3</b>&nbsp;agents</span>
+      </button>
+    </div>
+
+    <div class="body">
+      <div class="stage-wrap">
+
+        <!-- list pane -->
+        <div class="listpane" id="listpane">
+          <div class="sel-bar" id="selBar">
+            <button class="sel-x" id="selClear" title="Clear selection"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <span class="sel-count" id="selCount">0 selected</span>
+            <span class="sel-spacer"></span>
+            <button class="selbtn" data-sel-act="share" title="Share"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button>
+            <button class="selbtn" data-sel-act="download" title="Download"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg></button>
+            <button class="selbtn" data-sel-act="move" title="Move"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></button>
+            <button class="selbtn" data-sel-act="delete" title="Delete"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+          </div>
+          <div class="lp-head">
+            <span class="lp-sort"><span id="lpCount">12 items</span> · Date modified <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+          </div>
+          <div class="lp-list" id="fileList"></div>
+          <div class="gallery ghost" id="gallery"></div>
+          <div class="carousel ghost" id="carousel"></div>
+        </div>
+
+        <!-- stage -->
+        <div class="stage" id="stage">
+          <div class="home" id="home">
+            <div class="home-hd">
+              <h1>Estate&nbsp;docs</h1>
+            </div>
+            <p class="home-sub">Wills, trusts, powers of attorney and health directives for David &amp; Dominique — kept current and cross-checked against Arizona statute.</p>
+
+            <div class="agent-card">
+              <div class="agent-head">
+                <div class="agent-avatar"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="url(#gem)"/></svg></div>
+                <div>
+                  <div class="nm">2 agents working here</div>
+                  <div class="st">Gemini agent · all of Drive &nbsp;·&nbsp; Claude agent · this folder</div>
+                </div>
+              </div>
+              <div class="agent-summary">
+                Since you last visited, the <b>Gemini agent</b> generated an Estate Document Index covering all documents and ran an <b>A.R.S. §14-2513 currency check</b> — your statutory references are up to date. The <b>Claude agent</b> flagged one thing that needs you: a <b>missing HIPAA authorization for Jeff Wurtz</b> referenced in the trust.
+              </div>
+              <div class="agent-actions">
+                <button class="aabtn primary" onclick="openAgent()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 01-12 7.7L3 21l1.8-6A8.5 8.5 0 1121 11.5z"/></svg> View agents</button>
+                <button class="aabtn" onclick="selectFile('index')">Open the Index</button>
+                <button class="aabtn" onclick="resolveItem('hipaa-jeff')">Resolve the HIPAA gap</button>
+              </div>
+            </div>
+
+            <h3 class="section-h with-count">Needs you <span class="oi-count" id="oiCount">3 open</span></h3>
+            <div class="openitems" id="openItems"></div>
+
+            <h3 class="section-h">Recently in this folder</h3>
+            <div class="feed" id="homeFeed"></div>
+          </div>
+
+          <div class="preview" id="preview">
+            <div class="pv-bar">
+              <span class="ext-tag" id="pvExt">PDF</span>
+              <h2 id="pvTitle">—</h2>
+              <div class="pv-presence" id="pvPresence" title="Editing now"></div>
+              <div class="pv-act">
+                <button class="tbtn" onclick="clearSelection()" title="Back to folder"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <button class="tbtn" title="Star"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></button>
+                <button class="tbtn" title="Set as cover" onclick="setCoverFromPreview()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></button>
+                <button class="tbtn" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button>
+              </div>
+            </div>
+            <div class="pv-canvas" id="pvCanvas"></div>
+            <div class="pv-cursors" id="pvCursors"></div>
+          </div>
+
+          <div class="stage-empty-hint" id="emptyHint">
+            <kbd>↑</kbd><kbd>↓</kbd> to browse · <kbd>↵</kbd> to open · <kbd>esc</kbd> back
+          </div>
+        </div>
+
+        <!-- info / activity panel (with vertical time scrubber) -->
+        <div class="infopanel open" id="infopanel">
+          <div class="ip-head">
+            <div><div class="ip-title">Folder activity</div><div class="ip-sub">Who did what in Estate docs</div></div>
+            <button class="tbtn" onclick="toggleInfo()" title="Hide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="ip-body" id="ipBody"></div>
+        </div>
+
+        <!-- agent drawer -->
+        <div class="drawer" id="drawer">
+          <div class="dw-head" id="dwHead">
+            <div class="agent-avatar"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="url(#gem)"/></svg></div>
+            <div class="nm" id="dwHeadName">Agents<span>in Estate docs</span></div>
+            <button class="tbtn" onclick="closeAgent()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="dw-tabs" id="dwTabs">
+            <button class="dw-tab on" data-tab="roster">Agents</button>
+            <button class="dw-tab" data-tab="chat">Chat</button>
+            <button class="dw-tab" data-tab="history">History</button>
+            <button class="dw-tab" data-tab="tasks">Tasks</button>
+            <button class="dw-tab" data-tab="details">Details</button>
+          </div>
+
+          <div class="dw-panel on" data-panel="roster" id="rosterPanel"></div>
+
+          <div class="dw-panel" data-panel="chat">
+            <div class="chat">
+              <div class="chat-scroll" id="chatScroll"></div>
+              <div class="chat-input">
+                <textarea id="chatBox" rows="1" placeholder="Ask the agent…"></textarea>
+                <button class="send" onclick="sendChat()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dw-panel" data-panel="history">
+            <div class="feed" id="drawerFeed"></div>
+          </div>
+
+          <div class="dw-panel" data-panel="tasks" id="tasksPanel"></div>
+
+          <div class="dw-panel" data-panel="details" id="detailsPanel"></div>
+        </div>
+
+      </div><!-- /stage-wrap -->
+    </div><!-- /body -->
+
+    <!-- waffle / settings popovers -->
+    <div class="gc-pop" id="wafflePop">
+      <div class="gc-grid">
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3h8l5 9-4 7H7L3 12z"/><path d="M8 3l4 9H3M16 3l-4 9 4 7"/></svg></span><span class="gc-app-lbl">Drive</span></button>
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span><span class="gc-app-lbl">Gmail</span></button>
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span><span class="gc-app-lbl">Calendar</span></button>
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3v5h5"/><path d="M18 21H6a2 2 0 01-2-2V5a2 2 0 012-2h8l4 4v12a2 2 0 01-2 2z"/><path d="M8 13h8M8 17h6"/></svg></span><span class="gc-app-lbl">Docs</span></button>
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg></span><span class="gc-app-lbl">Sheets</span></button>
+        <button class="gc-app"><span class="gc-app-ico"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="url(#gem)"/></svg></span><span class="gc-app-lbl">Gemini</span></button>
+      </div>
+    </div>
+
+    <div class="gc-pop gc-menu" id="gearMenu">
+      <button class="gc-mi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Settings</button>
+      <button class="gc-mi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> Manage apps</button>
+      <div class="ctx-sep"></div>
+      <button class="gc-mi"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg> Help</button>
+    </div>
+
+  </div><!-- /main -->
+</div>
+
+<!-- row context menu (single instance) -->
+<div class="ctx-menu" id="rowCtx">
+  <button class="ctx-mi" data-act="open"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 012-2h6l2 3h6a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg> Open<span class="sc">↵</span></button>
+  <button class="ctx-mi" data-act="cover"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg> Set as cover</button>
+  <button class="ctx-mi" data-act="rename"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg> Rename</button>
+  <button class="ctx-mi" data-act="share"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg> Share</button>
+  <button class="ctx-mi" data-act="move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> Move</button>
+  <button class="ctx-mi" data-act="download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg> Download</button>
+  <div class="ctx-sep"></div>
+  <button class="ctx-mi" data-act="remove"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg> Remove</button>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const TODAY = new Date(2026,5,6);
+function dstr(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function daysAgo(n){const d=new Date(TODAY);d.setDate(d.getDate()-n);return d;}
+const SPARK='<svg width="11" height="11" viewBox="0 0 24 24" style="display:inline-block;vertical-align:-1px"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="url(#gem)"/></svg>';
+function avatarSpark(px){return `<svg width="${px}" height="${px}" viewBox="0 0 24 24"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="url(#gem)"/></svg>`;}
+function escapeHTML(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+const FILES = [
+  {id:'index', name:'Estate Document Index.pdf', short:'Estate Document Index', type:'doc', ext:'PDF',
+   title:['ESTATE DOCUMENT','INDEX','—','WURTZ · IGOE'], head:'Generated overview · 12 documents',
+   added:0, by:'Gemini agent', byAgent:true, cover:true, size:'248 KB',
+   note:'I generated this from all documents and verified every statutory citation against A.R.S. §14-2513.'},
+  {id:'will-d', name:'WURTZ_David_Last_Will_and_Testament.pdf', short:'Last Will & Testament — David', type:'doc', ext:'PDF',
+   title:['LAST WILL','AND TESTAMENT','OF','DAVID A. WURTZ'], head:'Executed · notarized',
+   added:2, by:'David Wurtz', byAgent:false, size:'1.2 MB',
+   note:'The executed copy you uploaded Jun 4. I matched it against the draft and confirmed the witness block is complete.'},
+  {id:'cert', name:'IGOE_Certification_of_Trust.pdf', short:'Certification of Trust', type:'doc', ext:'PDF',
+   title:['CERTIFICATION','OF TRUST'], head:'Wurtz Igoe Trust',
+   added:9, by:'Michael Igoe', byAgent:false, size:'420 KB',
+   note:'Added by Michael Igoe. Cross-referenced — it correctly names the Wurtz Igoe Trust as it appears in the General Assignment.'},
+  {id:'poa-d', name:'WURTZ_David_Durable_POA.pdf', short:'Durable Power of Attorney — David', type:'doc', ext:'PDF',
+   title:['DURABLE','POWER OF ATTORNEY','OF','DAVID A. WURTZ'], head:'Financial · springing',
+   added:18, by:'Gemini agent', byAgent:true, size:'380 KB',
+   note:'Renamed to the folder convention on Jun 2.'},
+  {id:'poa-i', name:'IGOE_Dominique_Durable_POA.pdf', short:'Durable Power of Attorney — Dominique', type:'doc', ext:'PDF',
+   title:['DURABLE','POWER OF ATTORNEY','OF','DOMINIQUE A. IGOE'], head:'Financial · springing',
+   added:18, by:'Gemini agent', byAgent:true, size:'376 KB',
+   note:'Renamed to the folder convention on Jun 2.'},
+  {id:'will-i', name:'IGOE_Dominique_Last_Will_and_Testament.pdf', short:'Last Will & Testament — Dominique', type:'doc', ext:'PDF',
+   title:['LAST WILL','AND TESTAMENT','OF','DOMINIQUE A. IGOE'], head:'Draft · awaiting signature',
+   added:18, by:'Dominique Igoe', byAgent:false, size:'1.1 MB',
+   note:'Still a draft. Pairs with David\'s executed will — I\'ll flag when this one is signed.'},
+  {id:'hcd-d', name:'WURTZ_David_Health_Care_Directive.pdf', short:'Health Care Directive — David', type:'doc', ext:'PDF',
+   title:['HEALTH CARE','DIRECTIVE','OF','DAVID A. WURTZ'], head:'Living will',
+   added:22, by:'David Wurtz', byAgent:false, size:'310 KB',note:''},
+  {id:'hcd-i', name:'IGOE_Dominique_Health_Care_Directive.pdf', short:'Health Care Directive — Dominique', type:'doc', ext:'PDF',
+   title:['HEALTH CARE','DIRECTIVE','OF','DOMINIQUE A. IGOE'], head:'Living will',
+   added:22, by:'Dominique Igoe', byAgent:false, size:'305 KB',note:''},
+  {id:'ga', name:'WURTZ_IGOE_General_Assignment.pdf', short:'General Assignment to Trust', type:'doc', ext:'PDF',
+   title:['GENERAL ASSIGNMENT','TO THE','WURTZ IGOE TRUST'], head:'Assets → Trust',
+   added:24, by:'Michael Igoe', byAgent:false, size:'290 KB',note:''},
+  {id:'phi-d', name:'WURTZ_David_Protected_Health_Info_Auth.pdf', short:'HIPAA Authorization — David', type:'doc', ext:'PDF',
+   title:['AUTHORIZATION FOR USE','AND DISCLOSURE OF','PROTECTED','HEALTH INFORMATION'], head:'HIPAA release',
+   added:24, by:'David Wurtz', byAgent:false, size:'190 KB',note:''},
+  {id:'phi-i', name:'IGOE_Dominique_Protected_Health_Info_Auth.pdf', short:'HIPAA Authorization — Dominique', type:'doc', ext:'PDF',
+   title:['AUTHORIZATION FOR USE','AND DISCLOSURE OF','PROTECTED','HEALTH INFORMATION'], head:'HIPAA release',
+   added:24, by:'Dominique Igoe', byAgent:false, size:'188 KB',note:''},
+  {id:'ttp', name:'WURTZ_David_Transfer_Tangible_Personal_Property.pdf', short:'Tangible Personal Property — David', type:'doc', ext:'PDF',
+   title:['TRANSFERRING','TANGIBLE PERSONAL','PROPERTY'], head:'Separate list',
+   added:24, by:'David Wurtz', byAgent:false, size:'160 KB',note:''},
+];
+
+/* --- colorful typed files (file-types feature) --- */
+const FILE_BRIEF = {
+  id:'brief', name:'Estate_Plan_Summary_and_Open_Questions.pdf',
+  short:'Estate Plan — Summary & Open Questions', type:'brief', ext:'PDF',
+  title:['ESTATE PLAN','SUMMARY &','OPEN QUESTIONS'],
+  head:'Prepared by the Claude agent · decision memo',
+  added:0, by:'Claude agent', byAgent:true, size:'196 KB',
+  note:'A decision memo drafted across all documents — the recommendation block flags the one action that needs you.',
+  brief:{
+    findings:[
+      'David’s will and both durable POAs are executed and statutorily current (A.R.S. §14-2513).',
+      'The Wurtz Igoe Trust is funded via the General Assignment; the Certification of Trust matches.',
+      'Dominique’s will remains a draft awaiting signature.'
+    ],
+    rec:'Obtain a HIPAA authorization for Jeff Wurtz before the next review — it is referenced in the trust but absent from this folder, which would stall a successor-agent handoff.',
+    open:['Dominique’s will — schedule signing & notarization.',
+          'Confirm tangible-property list reflects the 2026 additions.']
+  }
+};
+const FILE_IMAGE = {
+  id:'sigphoto', name:'IMG_4127_Executed_Signature_Page.jpg',
+  short:'Executed Signature Page (photo)', type:'image', ext:'JPG',
+  title:['EXECUTED','SIGNATURE PAGE','(PHOTO)'],
+  head:'Photo · notarized signature & seal',
+  added:2, by:'David Wurtz', byAgent:false, size:'3.4 MB',
+  note:'The photo David took of the notarized signature page. The Gemini agent read the seal and confirmed it matches the executed Last Will & Testament.'
+};
+const FILE_SHEET = {
+  id:'inventory', name:'Asset_and_Beneficiary_Inventory', short:'Asset & Beneficiary Inventory',
+  type:'sheet', ext:'SHEET', title:['ASSET &','BENEFICIARY','INVENTORY'],
+  head:'Google Sheet · funding tracker', added:1, by:'Gemini agent', byAgent:true, size:'14 KB',
+  note:'I keep this funding tracker in sync with the trust. Two assets still show “Pending” — the brokerage retitling and the 2nd-home deed.',
+  sheet:{
+    cols:['Asset','Type','Beneficiary','Value','Funding'],
+    rows:[
+      ['Chase Joint Checking','Bank','Wurtz Igoe Trust','$48,200','Funded'],
+      ['Fidelity Brokerage','Investment','Wurtz Igoe Trust','$612,540','Pending'],
+      ['Residence — Phoenix','Real property','Wurtz Igoe Trust','$915,000','Funded'],
+      ['2nd Home — Flagstaff','Real property','Wurtz Igoe Trust','$430,000','Pending'],
+      ['Vanguard IRA — David','Retirement','Dominique Igoe','$284,100','Funded'],
+      ['Term Life Policy','Insurance','Wurtz Igoe Trust','$1,000,000','Funded']
+    ],
+    note:'6 assets · 2 pending · last reconciled today'
+  }
+};
+const FILE_GDOC1 = {
+  id:'wishes', name:'Letter of Wishes', short:'Letter of Wishes', type:'gdoc', ext:'DOC',
+  title:['LETTER OF','WISHES'], head:'Google Doc · guidance to trustees',
+  added:3, by:'David Wurtz', byAgent:false, size:'—',
+  doc:{ title:'Letter of Wishes', byline:'David A. Wurtz · last edited Jun 3, 2026',
+    sections:[
+      {h:'To my trustees', body:'This letter is not legally binding, but I ask that you read it alongside the trust. It explains the reasoning behind the formal documents and how I hope you will exercise your discretion.'},
+      {h:'Guardianship', body:'Ruby and Miles should remain together. My sister Dominique knows my wishes for their schooling — see the school decision brief kept in this folder.'},
+      {h:'Personal effects', body:'The tangible-property list controls specific items. For anything not listed, divide by agreement; the Gemini agent keeps a running inventory you can use as a starting point.'}
+    ]}
+};
+const FILE_GDOC2 = {
+  id:'notes', name:'Estate Planning Meeting — Notes', short:'Estate Planning Meeting — Notes', type:'gdoc', ext:'DOC',
+  title:['ESTATE PLANNING','MEETING NOTES'], head:'Google Doc · meeting notes',
+  added:8, by:'Dominique Igoe', byAgent:false, size:'—',
+  doc:{ title:'Estate Planning Meeting — Notes', byline:'Dominique Igoe · May 30, 2026 · with Igoe Law LLP',
+    sections:[
+      {h:'Attendees', body:'David Wurtz, Dominique Igoe, and Michael Igoe (counsel). Notes were taken in this live doc; action items are assigned below.'},
+      {h:'Decisions', body:'Proceed with the springing powers of attorney as drafted. Re-title the Fidelity brokerage account into the trust. Obtain the outstanding HIPAA authorization for Jeff Wurtz.'},
+      {h:'Action items', body:'1) Michael to send the HIPAA form. 2) David to sign at the next notary visit. 3) Gemini agent to refresh the Estate Document Index once everything is signed.'}
+    ]}
+};
+const FILE_GSHEET = {
+  id:'expenses', name:'Estate Expenses & Disbursements', short:'Estate Expenses & Disbursements',
+  type:'sheet', ext:'SHEET', title:['ESTATE','EXPENSES'], head:'Google Sheet · disbursement log',
+  added:5, by:'Dominique Igoe', byAgent:false, size:'9 KB',
+  sheet:{ cols:['Date','Item','Paid to','Amount','Status'],
+    rows:[
+      ['May 02','Filing fee — trust','Maricopa County','$315','Cleared'],
+      ['May 14','Legal — drafting','Igoe Law LLP','$4,200','Cleared'],
+      ['May 28','Notary','Mobile Notary AZ','$85','Cleared'],
+      ['Jun 03','Appraisal — Flagstaff','Summit Appraisal','$650','Pending']
+    ],
+    note:'4 entries · 1 pending · last updated Jun 3' }
+};
+const ESTATE_APP = '<!doctype html><html><head><meta charset="utf-8"><style>'
++'*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Helvetica Neue",sans-serif;background:#fff;color:#1f1f1f;padding:30px 34px}'
++'h1{font-family:Georgia,"Times New Roman",serif;font-weight:600;font-size:22px;margin:0 0 3px}'
++'.sub{color:#80868b;font-size:12px;margin-bottom:24px}'
++'.top{display:flex;align-items:center;gap:24px;margin-bottom:26px}'
++'.ring{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;transition:background .4s}'
++'.ring .inner{width:80px;height:80px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:700;font-size:22px}'
++'.legend{font-size:13px;color:#5f6368;line-height:1.7}.legend b{color:#1f1f1f}'
++'ul{list-style:none;padding:0;margin:0}'
++'li{display:flex;align-items:center;gap:12px;padding:12px 6px;border-top:1px solid #eef0f2;font-size:14px;cursor:pointer;transition:background .12s}'
++'li:hover{background:#f7f9fc}'
++'.cb{width:21px;height:21px;flex:none;border:2px solid #c2c7cf;border-radius:6px;display:grid;place-items:center;transition:.12s}'
++'.cb svg{opacity:0}li.done .cb{background:#1a73e8;border-color:#1a73e8}li.done .cb svg{opacity:1}'
++'li.done .t{color:#9aa0a6;text-decoration:line-through}'
++'.foot{margin-top:22px;font-size:12px;color:#80868b;display:flex;align-items:center;gap:7px}'
++'</style></head><body>'
++'<h1>Estate Readiness</h1><div class="sub">Interactive · runs live inside the preview</div>'
++'<div class="top"><div class="ring" id="ring"><div class="inner" id="pct">0%</div></div>'
++'<div class="legend"><b id="cnt">0 of 6</b> milestones complete<br>Click any item to toggle it.</div></div>'
++'<ul id="list"></ul>'
++'<div class="foot"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 1c.5 5.5 4.5 9.5 10 10-5.5.5-9.5 4.5-10 10-.5-5.5-4.5-9.5-10-10 5.5-.5 9.5-4.5 10-10Z" fill="#9168C0"/></svg> Kept in sync by the Gemini agent</div>'
++'<script>'
++'var tasks=[["Will executed & notarized",true],["Trust funded (General Assignment)",true],["Durable POAs signed",true],["Health-care directives on file",true],["HIPAA authorizations complete",false],["Beneficiaries reviewed for 2026",false]];'
++'var list=document.getElementById("list");'
++'function render(){list.innerHTML="";tasks.forEach(function(t,i){var li=document.createElement("li");li.className=t[1]?"done":"";li.innerHTML="<span class=cb><svg width=12 height=12 viewBox=\\"0 0 24 24\\" fill=none stroke=#fff stroke-width=3><path d=\\"M5 12l5 5L20 6\\"/></svg></span><span class=t>"+t[0]+"</span>";li.onclick=function(){tasks[i][1]=!tasks[i][1];render();};list.appendChild(li);});'
++'var done=tasks.filter(function(t){return t[1];}).length;var pc=Math.round(done/tasks.length*100);document.getElementById("pct").textContent=pc+"%";document.getElementById("cnt").textContent=done+" of "+tasks.length;document.getElementById("ring").style.background="conic-gradient(#1a73e8 "+(pc*3.6)+"deg,#e8eaed 0deg)";}'
++'render();'
++'<\/script></body></html>';
+const FILE_WEBAPP = {
+  id:'dashboard', name:'Estate Readiness.html', short:'Estate Readiness (app)', type:'webapp', ext:'HTML',
+  title:['ESTATE','READINESS'], head:'Web app · runs live in preview', added:0, by:'Gemini agent', byAgent:true, size:'22 KB',
+  app: ESTATE_APP
+};
+FILES.splice(1, 0, FILE_WEBAPP, FILE_BRIEF, FILE_GDOC2, FILE_GSHEET, FILE_SHEET, FILE_IMAGE, FILE_GDOC1);
+
+const ACTIVITY = [
+  {kind:'agent', who:'Gemini agent', when:0, title:'Gemini agent',
+   desc:'Generated the Estate Document Index and ran a statute check.',
+   attach:{file:'Estate Document Index.pdf', extra:'A.R.S. §14-2513 currency check'}},
+  {kind:'agent', who:'Gemini agent', when:2, title:'Gemini agent',
+   desc:'Routed the executed Last Will & Testament from email into the folder.'},
+  {kind:'person', who:'David Wurtz', when:2, title:'David Wurtz', desc:'Uploaded the executed Last Will & Testament.'},
+  {kind:'agent', who:'Gemini agent', when:4, title:'Gemini agent', desc:'Renamed 4 files to the folder\'s naming convention.'},
+  {kind:'person', who:'Michael Igoe', when:9, title:'Michael Igoe', desc:'Added the Certification of Trust.'},
+  {kind:'agent', who:'Claude agent', when:17, title:'Claude agent', desc:'Flagged a missing HIPAA authorization for Jeff Wurtz.'},
+];
+
+let state = { view:'list', selected:null, agentOpen:false, asOf:0, coverId:'index' };
+state.activeAgent = null;
+state.spawning = false;
+state.query = '';
+state.checked = new Set();
+state.infoOpen = true;
+state.scopeAll = false;
+state.focused = false;
+state.returnView = 'gallery';
+let _lastCheckedId = null;
+
+/* ============ provenance (workspace feature) ============ */
+ACTIVITY[0].source = {app:'Drive'};
+ACTIVITY[1].source = {app:'Gmail',    label:'from Igoe Law LLP · Jun 4'};
+ACTIVITY[3].source = {app:'Gmail',    label:'from Michael Igoe · Jun 4'};
+ACTIVITY[5].source = {app:'Calendar', label:'Estate review · May 28'};
+(FILES.find(f=>f.id==='will-d')||{}).from = {app:'Gmail',    label:'from Igoe Law LLP · Jun 4'};
+(FILES.find(f=>f.id==='cert')  ||{}).from = {app:'Gmail',    label:'from Michael Igoe · May 28'};
+(FILES.find(f=>f.id==='ga')    ||{}).from = {app:'Calendar', label:'Estate review · May 28'};
+(FILES.find(f=>f.id==='index') ||{}).from = {app:'Drive'};
+const APP_GLYPH = {
+  Gmail:    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  Calendar: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  Drive:    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 3h8l5 9-4 7H7L3 12z"/><path d="M8 3l4 9H3M16 3l-4 9 4 7"/></svg>',
+  Chat:     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.5 8.5 0 01-12 7.7L3 21l1.8-6A8.5 8.5 0 1121 11.5z"/></svg>'
+};
+function srcChip(src){
+  if(!src) return '';
+  const g = APP_GLYPH[src.app] || APP_GLYPH.Drive;
+  const lbl = src.label ? ` <b>${src.app}</b> · ${src.label}` : ` <b>${src.app}</b>`;
+  return `<span class="src-chip" title="Collected from ${src.app}">${g}${lbl}</span>`;
+}
+
+/* ============ THUMBNAILS (dispatch on type) ============ */
+const fileList = document.getElementById('fileList');
+function isFuture(f){ return f.added < state.asOf; }
+function renderThumb(f, variant){
+  variant = variant || 'list';
+  const cls = variant==='gallery' ? 'gthumb' : 'fthumb';
+  let inner;
+  switch(f.type){
+    case 'brief': inner = thumbScale(168, variant==='gallery'?156:30, thumbBrief(f)); break;
+    case 'image': inner = thumbImage(f); break;
+    case 'sheet': inner = thumbScale(240, variant==='gallery'?156:30, thumbSheet(f)); break;
+    case 'gdoc': return gdocThumb(f, cls);
+    case 'webapp': return webappThumb(f, cls);
+    case 'pdf':
+    case 'doc':
+    default:      return docThumb(f, cls);
+  }
+  // colored types: gallery slot (.gpage) already sizes them; list needs a fixed frame
+  return variant==='gallery' ? inner : `<div class="fthumb ctframe">${inner}</div>`;
+}
+function webappThumb(f, cls){
+  const big = cls==='gthumb';
+  const r = big ? '52px' : '15px';
+  return `<div class="thumb ${cls}" style="justify-content:center;align-items:center;gap:${big?'10px':'2px'}">
+    <div style="width:${r};height:${r};border-radius:50%;background:conic-gradient(#1a73e8 240deg,#e3e6ea 0deg);display:grid;place-items:center">
+      <div style="width:60%;height:60%;border-radius:50%;background:#fff"></div></div>
+    <div class="t-body" style="width:72%;margin-top:${big?'10px':'2px'}">${['100%','64%'].map(w=>`<i style="width:${w}"></i>`).join('')}</div>
+  </div>`;
+}
+function gdocThumb(f, cls){
+  const big = cls==='gthumb';
+  const ts = big ? '2.5em' : '4.4px';
+  const mb = big ? '.7em' : '2.5px';
+  const titleTxt = (f.title||[f.short]).join(' ');
+  return `<div class="thumb ${cls}" style="justify-content:flex-start;align-items:stretch">
+    <div style="font-family:'Fraunces',serif;font-weight:600;text-align:left;color:#1a73e8;font-size:${ts};line-height:1.05;margin-bottom:${mb}">${titleTxt}</div>
+    <div class="t-body" style="width:100%;margin-top:0">${['100%','92%','100%','68%','100%','85%','100%'].map(w=>`<i style="width:${w}"></i>`).join('')}</div>
+  </div>`;
+}
+function docThumb(f, cls){
+  const titleLines = (f.title||[]).filter(l=>l!=='—').slice(0,4).map(l=>`<div class="tl">${l}</div>`).join('');
+  const widths = ['100%','100%','92%','100%','78%','100%','88%'];
+  const bodyLines = widths.map(w=>`<i style="width:${w}"></i>`).join('');
+  return `<div class="thumb ${cls}">
+      <div class="t-head">${(f.head||'').toUpperCase()}</div>
+      <div class="t-titlebox">${titleLines}</div>
+      <div class="t-body">${bodyLines}<span class="t-sign"></span></div>
+    </div>`;
+}
+function thumbScale(contentW, frameW, innerHTML){
+  const s = frameW / contentW;
+  return `<div class="ct-thumb"><div class="ct-scale" style="width:${contentW}px;transform:scale(${s})">${innerHTML}</div></div>`;
+}
+function thumbBrief(f){
+  return `<div class="ct-brief" style="padding:14px 13px">
+    <div class="b-kicker">${SPARK} Gemini brief</div>
+    <div class="b-title">${f.short}</div>
+    <div class="b-rule"></div>
+    <div class="ct-rec">
+      <div class="r-head"><span class="r-dot"></span>Recommendation</div>
+      <div class="r-body">${((f.brief&&f.brief.rec)||'').slice(0,84)}…</div>
+    </div>
+    <h4>Findings</h4>
+    <ul class="b-list">${((f.brief&&f.brief.findings)||[]).slice(0,2).map(x=>`<li>${x.slice(0,46)}…</li>`).join('')}</ul>
+  </div>`;
+}
+function thumbImage(f){
+  return `<div class="ct-image">
+    <div class="ph-paper"></div>
+    <svg class="ph-ink" viewBox="0 0 200 50" preserveAspectRatio="none">
+      <path d="M6 38 C18 8, 30 8, 36 30 C40 44, 48 12, 60 28 C70 40, 78 16, 92 30 C104 42, 120 18, 140 34 C156 46, 176 30, 196 24"
+        fill="none" stroke="#1f3a8a" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="ph-line"></div>
+    <div class="ph-seal"><div><div class="s-top">Notary<br>Public</div><div class="s-star">★</div><div class="s-top">Arizona</div></div></div>
+    <div class="ph-glow"></div>
+  </div>`;
+}
+function sheetGlyph(){
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 3v18"/></svg>`;
+}
+function statusPill(v){
+  const k = /pend/i.test(v) ? 'st-pending' : 'st-funded';
+  return `<span class="st-pill ${k}">${v}</span>`;
+}
+function thumbSheet(f){
+  const cols=f.sheet.cols, rows=f.sheet.rows.slice(0,4);
+  return `<div class="ct-sheet" style="width:240px">
+    <div class="sh-bar">${sheetGlyph()} Inventory</div>
+    <table>
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td>${i===cols.length-1?statusPill(c):(i===3?`<span class="amt">${c}</span>`:c)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+function typeLabel(f){
+  return {brief:'PDF',doc:'PDF',pdf:'PDF',image:'JPG',sheet:'SHEET',gdoc:'DOC',webapp:'HTML'}[f.type]||f.ext||'PDF';
+}
+
+/* ============ DOCUMENT BODY TEXT (multi-page real preview) ============ */
+const DOC_BODY = {
+  index:[
+    {head:'Generated by the Gemini agent · Jun 6 2026', h4:'Estate Document Index', sub:'Wurtz · Igoe — Family Estate Plan',
+     blocks:[
+       {p:'<span class="lead">This index</span> consolidates the instruments comprising the estate plan of DAVID A. WURTZ and DOMINIQUE A. IGOE, together with the dates of execution, the custodian of each original, and the controlling statutory authority under Title 14 of the Arizona Revised Statutes.'},
+       {art:'I. Dispositive Instruments'},
+       {p:'The Last Will and Testament of David A. Wurtz (executed June 4, 2026, two witnesses, notarized) and the Last Will and Testament of Dominique A. Igoe (draft, awaiting signature) operate as pour-over wills into the Wurtz Igoe Trust.'},
+       {art:'II. Fiduciary Authorities'},
+       {p:'Durable financial powers of attorney for each settlor are springing, effective upon written certification of incapacity by the attending physician. Health care directives and HIPAA authorizations govern medical decision-making and disclosure.'},
+       {art:'III. Currency Check'},
+       {p:'Every statutory citation appearing in these documents was verified against the current Arizona Revised Statutes, including A.R.S. §14-2513, as of the generation date above. No amendments affecting these instruments were found.'},
+     ]},
+    {head:'Estate Document Index · page 2', h4:'Open Items', sub:'Action required',
+     blocks:[
+       {p:'<span class="lead">One item remains outstanding.</span> The Certification of Trust references a HIPAA authorization for JEFF WURTZ that is not presently filed in this folder. A request should be issued to obtain the executed form.'},
+       {art:'Schedule A — Document Roster'},
+       {p:'1. Estate Document Index. 2. Last Will & Testament — David. 3. Last Will & Testament — Dominique. 4. Certification of Trust. 5. General Assignment to Trust. 6–7. Durable Powers of Attorney. 8–9. Health Care Directives. 10–11. HIPAA Authorizations. 12. Transfer of Tangible Personal Property.'},
+       {sign:[{cap:'Gemini agent — generated · Claude agent — verified'}]},
+     ]},
+  ],
+  'will-d':[
+    {head:'Last Will and Testament', h4:'Last Will and Testament of David A. Wurtz', sub:'State of Arizona — County of Maricopa',
+     blocks:[
+       {p:'<span class="lead">I, David A. Wurtz,</span> a resident of Maricopa County, Arizona, being of sound and disposing mind and memory and not acting under duress, menace, fraud, or undue influence of any person whomsoever, do hereby make, publish, and declare this to be my Last Will and Testament, hereby revoking all wills and codicils heretofore made by me.'},
+       {art:'Article One — Family'},
+       {p:'I am married to Dominique A. Igoe, hereinafter referred to as my spouse. All references in this Will to my spouse are to her.'},
+       {art:'Article Two — Pour-Over to Trust'},
+       {p:'I give the residue of my estate to the then-acting trustee of the WURTZ IGOE TRUST dated as set forth in the Certification of Trust, to be held, administered, and distributed in accordance with the terms of that trust.'},
+       {art:'Article Three — Personal Representative'},
+       {p:'I nominate my spouse, Dominique A. Igoe, as Personal Representative of my estate, to serve without bond. If she is unable or unwilling to serve, I nominate Michael Igoe as successor.'},
+     ]},
+    {head:'Last Will — David A. Wurtz · page 2', h4:'Execution', sub:'Article Four — Attestation',
+     blocks:[
+       {p:'<span class="lead">In witness whereof,</span> I have subscribed my name to this Last Will and Testament, consisting of two pages, this 4th day of June, 2026, at Scottsdale, Arizona.'},
+       {sign:[{cap:'David A. Wurtz — Testator'}]},
+       {p:'The foregoing instrument was signed, published, and declared by the Testator to be his Last Will and Testament in our presence, and we, at his request and in his presence and in the presence of each other, have subscribed our names as witnesses.'},
+       {sign:[{cap:'Witness — signature & address'},{cap:'Witness — signature & address'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Subscribed, sworn to, and acknowledged before me by David A. Wurtz, Testator, and by the witnesses, this 4th day of June, 2026. — Notary Public, My commission expires ____________.'},
+     ]},
+  ],
+  'will-i':[
+    {head:'Last Will and Testament — DRAFT', h4:'Last Will and Testament of Dominique A. Igoe', sub:'Draft — awaiting signature',
+     blocks:[
+       {p:'<span class="lead">I, Dominique A. Igoe,</span> a resident of Maricopa County, Arizona, being of sound and disposing mind, declare this to be my Last Will and Testament and revoke all prior wills and codicils.'},
+       {art:'Article One — Family'},
+       {p:'I am married to David A. Wurtz. All references herein to my spouse are to him.'},
+       {art:'Article Two — Pour-Over to Trust'},
+       {p:'I give the residue of my estate to the trustee of the WURTZ IGOE TRUST, to be administered under its terms in coordination with the pour-over will of my spouse.'},
+       {art:'Article Three — Personal Representative'},
+       {p:'I nominate my spouse, David A. Wurtz, as Personal Representative, to serve without bond, and Michael Igoe as successor.'},
+     ]},
+    {head:'Last Will — Dominique A. Igoe · page 2', h4:'Execution', sub:'Draft — signature block unsigned',
+     blocks:[
+       {p:'<span class="lead">In witness whereof,</span> the undersigned intends to subscribe her name to this instrument in the presence of two witnesses upon final review.'},
+       {sign:[{cap:'Dominique A. Igoe — Testator (unsigned)'},{cap:'Witness (pending)'},{cap:'Witness (pending)'}]},
+     ]},
+  ],
+  cert:[
+    {head:'Certification of Trust', h4:'Certification of Trust', sub:'Pursuant to A.R.S. §14-11013',
+     blocks:[
+       {p:'<span class="lead">This Certification of Trust</span> is executed by the undersigned trustee to confirm the existence and material terms of the WURTZ IGOE TRUST, without the necessity of producing the entire trust instrument.'},
+       {art:'1. Existence'},
+       {p:'The trust is in full force and effect and was duly created under the laws of the State of Arizona. The settlors are David A. Wurtz and Dominique A. Igoe.'},
+       {art:'2. Trustees'},
+       {p:'The currently acting trustees are the settlors jointly, with Michael Igoe serving as successor trustee upon the incapacity or death of both settlors.'},
+       {art:'3. Powers'},
+       {p:'The trustee holds full power to acquire, sell, encumber, and manage trust property, and to do all acts that a prudent person would perform for the benefit of the beneficiaries.'},
+     ]},
+    {head:'Certification of Trust · page 2', h4:'Disclosure', sub:'Reliance & execution',
+     blocks:[
+       {p:'<span class="lead">The trust references</span> a HIPAA authorization for Jeff Wurtz with respect to disclosure of protected health information relevant to successor-trustee determinations of incapacity.'},
+       {p:'Any person may rely upon this Certification as evidence of the existence and terms of the trust and shall be fully protected in so relying.'},
+       {sign:[{cap:'Michael Igoe — Trustee'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Acknowledged before me this day by the trustee. — Notary Public.'},
+     ]},
+  ],
+  'poa-d':[
+    {head:'Durable Power of Attorney', h4:'Durable Power of Attorney of David A. Wurtz', sub:'Financial — springing · A.R.S. §14-5501',
+     blocks:[
+       {p:'<span class="lead">I, David A. Wurtz,</span> the Principal, hereby designate my spouse, Dominique A. Igoe, as my agent (attorney-in-fact) to act for me in any lawful financial matter, subject to the conditions stated below.'},
+       {art:'1. Springing Effectiveness'},
+       {p:'This power of attorney shall become effective only upon the written certification of one licensed physician that I am unable to manage my financial affairs.'},
+       {art:'2. Powers Granted'},
+       {p:'My agent may manage banking and investment accounts, real property, tax matters, and government benefits, and may engage professional advisors on my behalf.'},
+       {art:'3. Durability'},
+       {p:'This power of attorney is durable and shall not be affected by my subsequent disability or incapacity, in accordance with A.R.S. §14-5501.'},
+     ]},
+    {head:'Durable POA — David A. Wurtz · page 2', h4:'Execution', sub:'Acknowledgment',
+     blocks:[
+       {p:'<span class="lead">Executed</span> as a durable instrument this day at Scottsdale, Arizona. I have read and understand this document.'},
+       {sign:[{cap:'David A. Wurtz — Principal'},{cap:'Witness'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Acknowledged before me by the Principal. — Notary Public.'},
+     ]},
+  ],
+  'poa-i':[
+    {head:'Durable Power of Attorney', h4:'Durable Power of Attorney of Dominique A. Igoe', sub:'Financial — springing · A.R.S. §14-5501',
+     blocks:[
+       {p:'<span class="lead">I, Dominique A. Igoe,</span> the Principal, designate my spouse, David A. Wurtz, as my agent to act for me in any lawful financial matter, subject to the conditions below.'},
+       {art:'1. Springing Effectiveness'},
+       {p:'This authority becomes effective upon the written certification of one licensed physician that I am unable to manage my financial affairs.'},
+       {art:'2. Powers Granted'},
+       {p:'My agent may manage accounts, real and personal property, tax filings, and benefits, and may retain advisors on my behalf.'},
+       {art:'3. Durability'},
+       {p:'This instrument is durable and survives my subsequent incapacity pursuant to A.R.S. §14-5501.'},
+     ]},
+    {head:'Durable POA — Dominique A. Igoe · page 2', h4:'Execution', sub:'Acknowledgment',
+     blocks:[
+       {p:'<span class="lead">Executed</span> as a durable instrument this day at Scottsdale, Arizona.'},
+       {sign:[{cap:'Dominique A. Igoe — Principal'},{cap:'Witness'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Acknowledged before me by the Principal. — Notary Public.'},
+     ]},
+  ],
+  'hcd-d':[
+    {head:'Health Care Directive', h4:'Health Care Directive of David A. Wurtz', sub:'Living Will & Health Care Power of Attorney',
+     blocks:[
+       {p:'<span class="lead">I, David A. Wurtz,</span> make this Health Care Directive to declare my wishes concerning medical treatment and to appoint an agent to make health care decisions for me if I am unable to do so.'},
+       {art:'1. Health Care Agent'},
+       {p:'I appoint Dominique A. Igoe as my health care agent, with authority to consent to, refuse, or withdraw any medical treatment.'},
+       {art:'2. Living Will'},
+       {p:'If I am in a terminal condition or irreversibly comatose, I direct that life-sustaining treatment be withheld or withdrawn, and that I be permitted to die naturally with only comfort care.'},
+       {art:'3. Comfort Care'},
+       {p:'I direct that I receive medication and care to alleviate pain even if doing so may hasten my death.'},
+     ]},
+    {head:'Health Care Directive — David A. Wurtz · page 2', h4:'Execution', sub:'Witness attestation',
+     blocks:[
+       {p:'<span class="lead">I sign this directive</span> knowingly and voluntarily. The witnesses below are not my agent, my health care provider, nor related to me.'},
+       {sign:[{cap:'David A. Wurtz — Declarant'},{cap:'Witness'},{cap:'Witness'}]},
+     ]},
+  ],
+  'hcd-i':[
+    {head:'Health Care Directive', h4:'Health Care Directive of Dominique A. Igoe', sub:'Living Will & Health Care Power of Attorney',
+     blocks:[
+       {p:'<span class="lead">I, Dominique A. Igoe,</span> make this Health Care Directive to declare my treatment wishes and appoint an agent to make health care decisions for me when I cannot.'},
+       {art:'1. Health Care Agent'},
+       {p:'I appoint David A. Wurtz as my health care agent, with full authority over medical decisions on my behalf.'},
+       {art:'2. Living Will'},
+       {p:'In a terminal or irreversibly comatose condition, I direct that life-sustaining treatment be withheld and that I receive only comfort care.'},
+       {art:'3. Comfort Care'},
+       {p:'I direct that pain be managed even if such measures may hasten death.'},
+     ]},
+    {head:'Health Care Directive — Dominique A. Igoe · page 2', h4:'Execution', sub:'Witness attestation',
+     blocks:[
+       {p:'<span class="lead">I sign this directive</span> knowingly and voluntarily, in the presence of two qualified witnesses.'},
+       {sign:[{cap:'Dominique A. Igoe — Declarant'},{cap:'Witness'},{cap:'Witness'}]},
+     ]},
+  ],
+  ga:[
+    {head:'General Assignment to Trust', h4:'General Assignment to the Wurtz Igoe Trust', sub:'Funding instrument',
+     blocks:[
+       {p:'<span class="lead">For valuable consideration,</span> David A. Wurtz and Dominique A. Igoe (the "Assignors") hereby assign, transfer, and convey to the trustee of the WURTZ IGOE TRUST all of their right, title, and interest in the property described herein.'},
+       {art:'1. Assigned Property'},
+       {p:'This assignment includes all tangible and intangible personal property now owned or hereafter acquired by the Assignors, excepting only assets requiring separate documents of title.'},
+       {art:'2. Intent'},
+       {p:'It is the intent of the Assignors that all such property be held as trust property and administered under the terms of the trust.'},
+     ]},
+    {head:'General Assignment · page 2', h4:'Execution', sub:'Acknowledgment',
+     blocks:[
+       {p:'<span class="lead">Executed</span> this day at Scottsdale, Arizona, to fund the trust as set forth in the Certification of Trust.'},
+       {sign:[{cap:'David A. Wurtz — Assignor'},{cap:'Dominique A. Igoe — Assignor'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Acknowledged before me by the Assignors. — Notary Public.'},
+     ]},
+  ],
+  'phi-d':[
+    {head:'HIPAA Authorization', h4:'Authorization for Use and Disclosure of Protected Health Information', sub:'David A. Wurtz · 45 C.F.R. §164.508',
+     blocks:[
+       {p:'<span class="lead">I, David A. Wurtz,</span> authorize my health care providers to use and disclose my protected health information ("PHI") to the persons named below, in accordance with the Health Insurance Portability and Accountability Act.'},
+       {art:'1. Authorized Recipients'},
+       {p:'Dominique A. Igoe and Michael Igoe, in their capacity as health care agent and successor trustee respectively.'},
+       {art:'2. Scope'},
+       {p:'This authorization extends to all medical records reasonably necessary to determine my capacity and to coordinate my care, including records otherwise protected by law.'},
+       {art:'3. Expiration'},
+       {p:'This authorization remains in effect until revoked by me in writing.'},
+     ]},
+    {head:'HIPAA Authorization — David A. Wurtz · page 2', h4:'Execution', sub:'Signature',
+     blocks:[
+       {p:'<span class="lead">I understand</span> that I may revoke this authorization at any time, except to the extent action has already been taken in reliance upon it.'},
+       {sign:[{cap:'David A. Wurtz — Patient'}]},
+     ]},
+  ],
+  'phi-i':[
+    {head:'HIPAA Authorization', h4:'Authorization for Use and Disclosure of Protected Health Information', sub:'Dominique A. Igoe · 45 C.F.R. §164.508',
+     blocks:[
+       {p:'<span class="lead">I, Dominique A. Igoe,</span> authorize my health care providers to use and disclose my protected health information to the persons named below, in accordance with HIPAA.'},
+       {art:'1. Authorized Recipients'},
+       {p:'David A. Wurtz and Michael Igoe, in their capacity as health care agent and successor trustee respectively.'},
+       {art:'2. Scope'},
+       {p:'This authorization covers all medical records reasonably necessary to determine my capacity and coordinate my care.'},
+       {art:'3. Expiration'},
+       {p:'This authorization remains in effect until revoked by me in writing.'},
+     ]},
+    {head:'HIPAA Authorization — Dominique A. Igoe · page 2', h4:'Execution', sub:'Signature',
+     blocks:[
+       {p:'<span class="lead">I understand</span> that I may revoke this authorization at any time, except to the extent action has already been taken in reliance upon it.'},
+       {sign:[{cap:'Dominique A. Igoe — Patient'}]},
+     ]},
+  ],
+  ttp:[
+    {head:'Transfer of Tangible Personal Property', h4:'Memorandum of Transfer of Tangible Personal Property', sub:'David A. Wurtz · Separate Writing',
+     blocks:[
+       {p:'<span class="lead">This memorandum</span> is made pursuant to my Last Will and Testament and is intended to dispose of items of tangible personal property as a separate writing referred to therein.'},
+       {art:'1. Effect'},
+       {p:'The items listed below are to be distributed to the persons named, notwithstanding any contrary provision of the residuary estate.'},
+       {art:'2. Schedule of Items'},
+       {p:'Watch collection — to Michael Igoe. Photographic equipment — to Dominique A. Igoe. Family library and papers — to the Wurtz Igoe Trust.'},
+       {art:'3. Amendment'},
+       {p:'I may amend or revoke this memorandum at any time by a signed writing.'},
+     ]},
+    {head:'Transfer of Tangible Personal Property · page 2', h4:'Execution', sub:'Signature',
+     blocks:[
+       {p:'<span class="lead">Signed</span> as a separate writing referenced in my Last Will and Testament, this day at Scottsdale, Arizona.'},
+       {sign:[{cap:'David A. Wurtz'}]},
+     ]},
+  ],
+};
+function generateBody(f){
+  const subject = (f.title||[]).filter(l=>l!=='—').join(' ');
+  return [
+    {head:f.head||'Legal Instrument', h4:f.short, sub:'State of Arizona — County of Maricopa',
+     blocks:[
+       {p:`<span class="lead">This instrument,</span> styled ${subject}, is executed in connection with the estate plan of David A. Wurtz and Dominique A. Igoe and is filed in the Estate docs folder.`},
+       {art:'Article One — Purpose'},
+       {p:'The undersigned executes this document of their own free will, being of sound mind, to give effect to the intentions described herein under the laws of the State of Arizona.'},
+       {art:'Article Two — Operative Terms'},
+       {p:'The terms of this instrument shall be construed in harmony with the related wills, trust, and directives comprising this estate plan, and any statutory references shall be read as of their then-current form.'},
+     ]},
+    {head:`${f.short} · page 2`, h4:'Execution', sub:'Acknowledgment',
+     blocks:[
+       {p:'<span class="lead">In witness whereof,</span> the undersigned has executed this instrument as of the date written below.'},
+       {sign:[{cap:f.by||'Signatory'},{cap:'Witness'}]},
+       {notary:'STATE OF ARIZONA, COUNTY OF MARICOPA. Acknowledged before me this day. — Notary Public.'},
+     ]},
+  ];
+}
+function sheetHTML(pg, idx, total){
+  const blocks = pg.blocks.map(b=>{
+    if(b.art)   return `<div class="ps-art">${b.art}</div>`;
+    if(b.notary)return `<div class="ps-notary">${b.notary}</div>`;
+    if(b.sign)  return `<div class="ps-sign">${b.sign.map(s=>`<div class="ps-sigline"><div class="rule"></div><div class="cap">${s.cap}</div></div>`).join('')}</div>`;
+    return `<p>${b.p}</p>`;
+  }).join('');
+  const sub = pg.sub ? `<div class="ps-sub">${pg.sub}</div>` : '';
+  return `<div class="pv-sheet">
+      <div class="ps-head">${pg.head||''}</div>
+      <h4>${pg.h4||''}</h4>${sub}
+      ${blocks}
+      <div class="ps-pageno">— ${idx+1} of ${total} —</div>
+    </div>`;
+}
+
+/* ============ colorful full-preview renderers (file contents) ============ */
+function previewBrief(f){
+  const b=f.brief||{};
+  return `<div class="ct-brief">
+    <div class="b-kicker">${SPARK} Generated by the Claude agent</div>
+    <div class="b-title">${f.short}</div>
+    <div class="b-sub">${f.head} · Wurtz · Igoe · ${dstr(daysAgo(f.added))}</div>
+    <div class="b-rule"></div>
+    <div class="ct-rec">
+      <div class="r-head"><span class="r-dot"></span>Recommendation</div>
+      <div class="r-body">${b.rec||''}</div>
+    </div>
+    <h4>What I found</h4>
+    <ul class="b-list">${(b.findings||[]).map(x=>`<li>${x}</li>`).join('')}</ul>
+    <h4>Open questions</h4>
+    <ul class="b-list">${(b.open||[]).map(x=>`<li>${x}</li>`).join('')}</ul>
+    <p style="color:#80868b;font-size:11px;margin-top:14px">Drafted automatically. Citations verified against current Arizona statute.</p>
+  </div>`;
+}
+function previewImage(f){
+  return `<div class="ct-image">
+    <div class="ph-paper"></div>
+    <svg class="ph-ink" viewBox="0 0 200 50" preserveAspectRatio="none">
+      <path d="M6 38 C18 8, 30 8, 36 30 C40 44, 48 12, 60 28 C70 40, 78 16, 92 30 C104 42, 120 18, 140 34 C156 46, 176 30, 196 24"
+        fill="none" stroke="#1f3a8a" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="ph-line"></div>
+    <div class="ph-cap">David A. Wurtz — signed Jun 4, 2026</div>
+    <div class="ph-seal"><div><div class="s-top">Notary<br>Public</div><div class="s-star">★</div><div class="s-top">State of<br>Arizona</div></div></div>
+    <div class="ph-glow"></div>
+  </div>`;
+}
+function previewSheet(f){
+  const s=f.sheet, cols=s.cols;
+  return `<div class="ct-sheet">
+    <div class="sh-bar">${sheetGlyph()} ${f.short}</div>
+    <table>
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${s.rows.map(r=>`<tr>${r.map((c,i)=>`<td>${i===cols.length-1?statusPill(c):(i===3?`<span class="amt">${c}</span>`:c)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>
+    <div class="sh-foot"><span>${s.note}</span><span>${SPARK} kept in sync by the Gemini agent</span></div>
+  </div>`;
+}
+function previewGDoc(f){
+  const d=f.doc||{};
+  return `<div class="gd-title">${d.title||f.short}</div><div class="gd-by">${d.byline||''}</div>`+
+    (d.sections||[]).map(s=>`<h3>${s.h}</h3><p>${s.body}</p>`).join('');
+}
+function previewContentFor(f){
+  switch(f.type){
+    case 'brief': return {html:previewBrief(f), cls:'pv-sheet-brief'};
+    case 'image': return {html:previewImage(f), cls:'pv-sheet-bleed'};
+    case 'sheet': return {html:previewSheet(f), cls:'pv-sheet-bleed'};
+    case 'gdoc':  return {html:previewGDoc(f),  cls:'pv-sheet-gdoc'};
+    default:      return null;
+  }
+}
+
+/* zoom state for the preview */
+let pvZoom = 1;
+function pvApplyZoom(){
+  const doc=document.getElementById('pvDoc');
+  if(doc) doc.style.transform=`scale(${pvZoom})`;
+  const lvl=document.getElementById('pvZoomLvl');
+  if(lvl) lvl.textContent=Math.round(pvZoom*100)+'%';
+}
+function pvSetZoom(delta){
+  pvZoom=Math.min(1.8,Math.max(0.6,Math.round((pvZoom+delta)*100)/100));
+  pvApplyZoom();
+}
+
+/* ============ search / visible set ============ */
+function matchesQuery(f){
+  if(!state.query) return true;
+  const q = state.query.toLowerCase();
+  return (f.name+' '+f.short).toLowerCase().includes(q);
+}
+function getVisibleFiles(){
+  return FILES.filter(f => !isFuture(f) && matchesQuery(f));
+}
+
+/* ============ file list (combined: thumb + type badge + attribution + checkbox + quick-acts + ctx) ============ */
+function rowHTML(f){
+  const fut   = isFuture(f);
+  const cover = f.id===state.coverId ? `<span class="cover-tag">${SPARK} COVER</span>` : '';
+  const by    = f.byAgent ? `${SPARK} ${f.by}` : f.by;
+  const isChecked = state.checked.has(f.id);
+  return `<div class="frow ${state.selected===f.id?'active':''} ${fut?'future':''} ${isChecked?'checked':''}"
+       data-id="${f.id}" onclick="rowClick(event,'${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')">
+    <span class="fcheck" onclick="toggleCheck(event,'${f.id}')" title="Select">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+    </span>
+    ${renderThumb(f,'list')}
+    <div class="fmeta"><b>${f.short}</b><span>${by} · ${dstr(daysAgo(f.added))}</span></div>
+    <span class="ftype">${typeLabel(f)}</span>
+    ${cover}
+    <span class="star"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></span>
+    <span class="quick">
+      <button class="qbtn" title="Share" onclick="rowQuick(event,'share','${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M8.3 10.9l7.4-4.3M8.3 13.1l7.4 4.3"/></svg></button>
+      <button class="qbtn" title="Download" onclick="rowQuick(event,'download','${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg></button>
+      <button class="qbtn" title="More" onclick="openRowCtx(event,'${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
+    </span>
+  </div>`;
+}
+function renderList(){
+  const visible = getVisibleFiles();
+  const askRow = state.query ? `
+    <div class="ask-row" onclick="askAgentsFromSearch()">
+      <span class="ask-ico">${SPARK}</span>
+      <div class="ask-t"><b>Ask the agents: &ldquo;${escapeHTML(state.query)}&rdquo;</b>
+        <span>Search across this folder &amp; your Workspace</span></div>
+      <span class="ask-go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </div>` : '';
+  const rows = visible.map(rowHTML).join('');
+  const emptyState = (state.query && visible.length===0)
+    ? `<div class="search-empty">No documents match &ldquo;${escapeHTML(state.query)}&rdquo;.<br>Try the agents instead.</div>`
+    : '';
+  fileList.innerHTML = askRow + rows + emptyState;
+  const count = visible.length;
+  document.getElementById('lpCount').textContent =
+    state.query ? `${count} match${count===1?'':'es'}` : `${count} items`;
+  fileList.classList.toggle('has-selection', state.checked.size>0);
+  syncSelectionBar();
+}
+
+/* ============ gallery / cover ============ */
+const gallery = document.getElementById('gallery');
+function renderGallery(){
+  const cover = FILES.find(f=>f.id===state.coverId);
+  const heroInner = (cover.type==='doc'||cover.type==='pdf')
+    ? `<div style="font-size:8px;letter-spacing:.12em;color:#9aa0a6;font-family:'Hanken Grotesk';font-weight:700;margin-bottom:auto">${cover.head.toUpperCase()}</div>
+       <div style="margin:auto 0">${cover.title.map(l=>`<div>${l}</div>`).join('')}</div>`
+    : `<div style="position:absolute;inset:0">${renderThumb(cover,'gallery')}</div>`;
+  const visibleCount = getVisibleFiles().length;
+  const others = FILES.filter(f=>f.id!==state.coverId && !isFuture(f) && matchesQuery(f));
+  gallery.innerHTML = `
+    <div class="cover-hero" onclick="selectFile('${cover.id}')" style="cursor:pointer">
+      <div class="cover-page" style="position:relative">${heroInner}</div>
+      <div>
+        <div class="cover-badge">${SPARK} Folder cover · elevated by the agents</div>
+        <div class="cover-title">The Estate, at a glance</div>
+        <div class="cover-desc">One document brings the whole folder together — every will, trust and directive indexed, with statutory citations verified. The agents keep this cover current as the folder changes.</div>
+        <div class="cover-meta">
+          <span class="chip"><b>${visibleCount}</b> documents</span>
+          <span class="chip">Last verified <b>today</b></span>
+          <span class="chip"><b>1</b> open item</span>
+        </div>
+      </div>
+    </div>
+    <h3 class="section-h" style="padding:0 2px">All documents</h3>
+    <div class="gal-grid">
+      ${others.map(f=>`
+        <div class="gcard" onclick="selectFile('${f.id}')">
+          <div class="gpage">${renderThumb(f,'gallery')}</div>
+          <div class="gcard-foot"><b>${f.short}</b><span>${f.byAgent?SPARK+' ':''}${f.by} · ${dstr(daysAgo(f.added))}</span></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ============ selection / preview (combined: multi-page OR colored + provenance + suggestions) ============ */
+const home=document.getElementById('home'), preview=document.getElementById('preview'), emptyHint=document.getElementById('emptyHint');
+function renderPreview(id){
+  state.selected=id;
+  const f=FILES.find(x=>x.id===id);
+  if(!f) return;
+  home.style.display='none'; preview.style.display='flex'; emptyHint.style.display='none';
+  document.getElementById('stage').classList.remove('is-home');
+  document.getElementById('pvExt').textContent=f.ext;
+  document.getElementById('pvTitle').textContent=f.name;
+
+  const canvas = document.querySelector('.pv-canvas');
+  pvZoom = 1;
+  const custom = previewContentFor(f);
+  if(f.type==='webapp'){
+    canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet pv-sheet-app"><span class="pv-applabel">Live app</span><iframe id="pvAppFrame" title="${f.short}" sandbox="allow-scripts"></iframe></div></div>`;
+    const fr=document.getElementById('pvAppFrame'); if(fr) fr.srcdoc=f.app;
+    canvas.onscroll = null;
+  } else if(custom){
+    canvas.innerHTML = `<div class="pv-doc" id="pvDoc"><div class="pv-sheet ${custom.cls}">${custom.html}</div></div>`;
+    canvas.onscroll = null;
+  } else {
+    const pages = DOC_BODY[f.id] || generateBody(f);
+    const total = pages.length;
+    const pagesHTML = pages.map((pg,i)=>sheetHTML(pg,i,total)).join('');
+    canvas.innerHTML =
+      `<div class="pv-doc" id="pvDoc">${pagesHTML}</div>
+       <div class="pv-tools">
+         <span class="pt-count" id="pvCount">1 of ${total}</span>
+         <span class="pt-div"></span>
+         <button class="zbtn" onclick="pvSetZoom(-0.1)" title="Zoom out">−</button>
+         <span class="zlvl" id="pvZoomLvl">100%</span>
+         <button class="zbtn" onclick="pvSetZoom(0.1)" title="Zoom in">＋</button>
+       </div>`;
+    const sheets = canvas.querySelectorAll('.pv-sheet');
+    canvas.onscroll = ()=>{
+      const mid = canvas.scrollTop + canvas.clientHeight/2;
+      let cur = 1;
+      sheets.forEach((s,i)=>{ if(s.offsetTop <= mid) cur = i+1; });
+      const c=document.getElementById('pvCount'); if(c) c.textContent = cur+' of '+total;
+    };
+  }
+  pvApplyZoom();
+
+  renderDetails(f);
+  refreshChatSuggestions();
+}
+/* list-view selection: keep the browsable list on the left */
+function selectFile(id){
+  if(state.view!=='list'){ openFocused(id); return; }   // opened from gallery/carousel → focus only
+  state.focused=false;
+  document.getElementById('listpane').classList.remove('collapsed');
+  renderPreview(id);
+  renderList();
+}
+/* focus a single item full-width (no file list), e.g. opened from gallery/carousel */
+function openFocused(id){
+  state.focused=true; state.returnView=state.view;
+  const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
+  lp.classList.add('collapsed');
+  fileList.classList.add('ghost'); gallery.classList.add('ghost'); carousel.classList.add('ghost');
+  stage.classList.remove('ghost','is-home');
+  renderPreview(id);
+}
+function clearSelection(){
+  if(state.focused){
+    state.focused=false;
+    document.getElementById('listpane').classList.remove('collapsed');
+    setView(state.returnView||'gallery');
+    refreshChatSuggestions();
+    return;
+  }
+  setView('gallery');
+  refreshChatSuggestions();
+}
+function renderDetails(f){
+  const TYPE_LABEL = {brief:'PDF document', doc:'PDF document', pdf:'PDF document', image:'JPEG image', sheet:'Google Sheet', gdoc:'Google Doc', webapp:'Web app (HTML)'};
+  document.getElementById('detailsPanel').innerHTML=`
+    <div class="det-row"><span class="k">Name</span><span class="v">${f.short}</span></div>
+    <div class="det-row"><span class="k">Type</span><span class="v">${TYPE_LABEL[f.type]||'PDF document'}</span></div>
+    <div class="det-row"><span class="k">Size</span><span class="v mono">${f.size}</span></div>
+    <div class="det-row"><span class="k">Owner</span><span class="v">${f.by}</span></div>
+    <div class="det-row"><span class="k">Modified</span><span class="v mono">${daysAgo(f.added).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
+    <div class="det-row"><span class="k">In cover</span><span class="v">${f.id===state.coverId?'Yes — folder cover':'No'}</span></div>
+    <div class="det-row"><span class="k">Agent status</span><span class="v">${f.note?'Reviewed':'Clean'}</span></div>`;
+}
+
+/* ============ view switch ============ */
+document.getElementById('viewSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setView(b.dataset.view);});
+const carousel=document.getElementById('carousel');
+function setView(v){
+  state.view=v;
+  state.focused=false;
+  document.getElementById('listpane').classList.remove('collapsed');
+  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
+  const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
+  const full=(v==='gallery'||v==='carousel');
+  if(full){
+    state.selected=null;
+    home.style.display=''; preview.style.display='none'; emptyHint.style.display='none';
+    lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
+    gallery.classList.toggle('ghost', v!=='gallery');
+    carousel.classList.toggle('ghost', v!=='carousel');
+    stage.classList.add('ghost','is-home');
+    if(v==='gallery') renderGallery(); else renderCarousel();
+  }else{
+    lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
+    gallery.classList.add('ghost'); carousel.classList.add('ghost');
+    stage.classList.remove('ghost','is-home');
+    renderList();
+    const vis=getVisibleFiles();
+    const sel=(state.selected&&vis.some(f=>f.id===state.selected))?state.selected:(vis[0]&&vis[0].id);
+    if(sel) selectFile(sel);
+  }
+}
+
+/* ============ carousel (cover flow) ============ */
+let carIndex=0; const CGAP=48;
+function cfCardInner(f){
+  const custom=previewContentFor(f);
+  if(custom) return `<div class="pv-sheet ${custom.cls}" style="height:100%;width:100%;overflow:hidden">${custom.html}</div>`;
+  return `<div class="cf-page"><div class="cf-head">${f.head||''}</div><div class="cf-titlebox">${(f.title||[f.short]).map(l=>`<div>${l}</div>`).join('')}</div><div class="cf-lines">${'<i></i>'.repeat(5)}<i style="width:60%"></i></div></div>`;
+}
+function renderCarousel(){
+  const vis=getVisibleFiles();
+  if(carIndex>=vis.length) carIndex=0;
+  if(!vis.length){ carousel.innerHTML='<div style="margin:auto;color:var(--faint);font-size:13px">No documents here.</div>'; return; }
+  carousel.innerHTML=`
+    <button class="cf-nav prev" onclick="cfGo(carIndex-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="cf-nav next" onclick="cfGo(carIndex+1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 18l6-6-6-6"/></svg></button>
+    <div class="cf-stage"><div class="cf-track" id="cfTrack">
+      ${vis.map((f,i)=>`<div class="cf-card" data-i="${i}" onclick="cfGo(${i})" ondblclick="openFromCarousel(${i})">${cfCardInner(f)}</div>`).join('')}
+    </div></div>
+    <div class="cf-meta" id="cfMeta"></div>
+    <div class="cf-strip" id="cfStrip">
+      ${vis.map((f,i)=>`<div class="cf-thumb" data-i="${i}" onclick="cfGo(${i})"><div class="cf-tt">${f.title?f.title.slice(0,3).join('<br>'):f.short}</div></div>`).join('')}
+    </div>`;
+  cfLayout();
+}
+function cfLayout(){
+  const track=document.getElementById('cfTrack'); if(!track)return;
+  const vis=getVisibleFiles();
+  const cw=track.children[carIndex]?track.children[carIndex].offsetWidth:340;
+  track.style.transform=`translateY(-50%) translateX(${-(carIndex*(cw+CGAP))-cw/2}px)`;
+  const f=vis[carIndex];
+  const meta=document.getElementById('cfMeta');
+  if(f&&meta) meta.innerHTML=`<b>${f.short}</b><span>${f.byAgent?SPARK+' ':''}${f.by} · ${dstr(daysAgo(f.added))} · ${carIndex+1} of ${vis.length}</span>`;
+  document.querySelectorAll('.cf-card').forEach((c,i)=>c.classList.toggle('focus',i===carIndex));
+  document.querySelectorAll('.cf-thumb').forEach((c,i)=>c.classList.toggle('on',i===carIndex));
+  const strip=document.getElementById('cfStrip'), on=strip&&strip.querySelector('.cf-thumb.on');
+  if(strip&&on) strip.scrollTo({left:on.offsetLeft-strip.clientWidth/2+on.clientWidth/2,behavior:'smooth'});
+}
+function cfGo(i){
+  const vis=getVisibleFiles();
+  carIndex=Math.max(0,Math.min(vis.length-1,i));
+  state.selected=vis[carIndex].id;
+  cfLayout(); renderDetails(vis[carIndex]);
+}
+function openFromCarousel(i){ const vis=getVisibleFiles(); openFocused(vis[i].id); }
+
+/* ============ cover ============ */
+function setCoverFromPreview(){
+  if(!state.selected)return;
+  state.coverId=state.selected;
+  renderList(); renderGallery(); toast('Set as folder cover');
+}
+
+/* ============ multi-select / quick actions / context menu ============ */
+function rowClick(e, id){
+  if(e.target.closest('.fcheck') || e.target.closest('.quick')) return;
+  if(state.checked.size>0){ toggleCheck(e, id); return; }
+  selectFile(id);
+}
+function toggleCheck(e, id){
+  e.stopPropagation();
+  const visible = getVisibleFiles();
+  if(e.shiftKey && _lastCheckedId){
+    const a = visible.findIndex(f=>f.id===_lastCheckedId);
+    const b = visible.findIndex(f=>f.id===id);
+    if(a>-1 && b>-1){
+      const [lo,hi] = a<b ? [a,b] : [b,a];
+      for(let i=lo;i<=hi;i++) state.checked.add(visible[i].id);
+    }
+  } else {
+    if(state.checked.has(id)) state.checked.delete(id);
+    else state.checked.add(id);
+    _lastCheckedId = id;
+  }
+  renderList();
+}
+function clearChecks(){ state.checked.clear(); _lastCheckedId=null; renderList(); }
+function syncSelectionBar(){
+  const bar = document.getElementById('selBar');
+  const head = document.querySelector('.lp-head');
+  const n = state.checked.size;
+  if(n>0){
+    bar.classList.add('on');
+    head.classList.add('hidden-for-sel');
+    document.getElementById('selCount').textContent = `${n} selected`;
+  } else {
+    bar.classList.remove('on');
+    head.classList.remove('hidden-for-sel');
+  }
+}
+document.getElementById('selClear').addEventListener('click', clearChecks);
+document.getElementById('selBar').addEventListener('click', e=>{
+  const b = e.target.closest('[data-sel-act]'); if(!b) return;
+  const act = b.getAttribute('data-sel-act');
+  const n = state.checked.size;
+  const verb = {share:'Sharing',download:'Downloading',move:'Moving',delete:'Removing'}[act] || act;
+  toast(`${verb} ${n} item${n===1?'':'s'}`);
+  if(act==='delete'){ clearChecks(); }
+});
+function rowQuick(e, act, id){
+  e.stopPropagation();
+  const f = FILES.find(x=>x.id===id);
+  if(act==='share')    toast(`Sharing “${f.short}”`);
+  if(act==='download') toast(`Downloading “${f.short}”`);
+}
+const rowCtx = document.getElementById('rowCtx');
+let _ctxId = null;
+function openRowCtx(e, id){
+  e.preventDefault(); e.stopPropagation();
+  _ctxId = id;
+  rowCtx.classList.add('open');
+  const mw = rowCtx.offsetWidth || 208, mh = rowCtx.offsetHeight || 320;
+  let x = e.clientX, y = e.clientY;
+  if(x+mw > window.innerWidth-8)  x = window.innerWidth - mw - 8;
+  if(y+mh > window.innerHeight-8) y = window.innerHeight - mh - 8;
+  rowCtx.style.left = x+'px';
+  rowCtx.style.top  = y+'px';
+}
+function closeRowCtx(){ rowCtx.classList.remove('open'); _ctxId=null; }
+rowCtx.addEventListener('click', e=>{
+  const mi = e.target.closest('.ctx-mi'); if(!mi) return;
+  const act = mi.dataset.act;
+  const f = FILES.find(x=>x.id===_ctxId);
+  closeRowCtx();
+  if(!f) return;
+  switch(act){
+    case 'open':     selectFile(f.id); break;
+    case 'cover':    state.coverId=f.id; renderList(); renderGallery(); toast('Set as folder cover'); break;
+    case 'rename':   toast(`Rename “${f.short}”`); break;
+    case 'share':    toast(`Sharing “${f.short}”`); break;
+    case 'move':     toast(`Move “${f.short}”`); break;
+    case 'download': toast(`Downloading “${f.short}”`); break;
+    case 'remove':   toast(`Removed “${f.short}”`); break;
+  }
+});
+
+/* ============ live search ============ */
+const searchInput = document.querySelector('.search input');
+searchInput.addEventListener('input', e=>{
+  state.query = e.target.value.trim();
+  if(state.view==='gallery' && state.query){ setView('list'); }
+  else if(state.view==='gallery'){ renderGallery(); }
+  else { renderList(); }
+});
+function askAgentsFromSearch(){
+  const q = state.query;
+  openAgent('chat');
+  if(typeof chatBox!=='undefined' && chatBox){ chatBox.value = q; sendChat(); }
+}
+function clearScope(){
+  document.getElementById('search').classList.add('broad');
+  searchInput.placeholder='Search across all of Drive…';
+  state.scopeAll=true;
+  searchInput.focus();
+  toast('Search broadened to all of Drive');
+}
+function restoreScope(){
+  document.getElementById('search').classList.remove('broad');
+  searchInput.placeholder='Ask or search…';
+  state.scopeAll=false;
+}
+document.getElementById('folderCrumb').addEventListener('click',restoreScope);
+
+/* ============ Google cluster popovers ============ */
+const wafflePop = document.getElementById('wafflePop');
+const gearMenu  = document.getElementById('gearMenu');
+document.getElementById('waffleBtn').addEventListener('click', e=>{
+  e.stopPropagation(); gearMenu.classList.remove('open');
+  wafflePop.classList.toggle('open');
+});
+document.getElementById('gearBtn').addEventListener('click', e=>{
+  e.stopPropagation(); wafflePop.classList.remove('open');
+  const r = e.currentTarget.getBoundingClientRect();
+  gearMenu.style.right = (window.innerWidth - r.right) + 'px';
+  gearMenu.classList.toggle('open');
+});
+document.getElementById('acctBtn').addEventListener('click', ()=> toast('David Wurtz · david@davidwurtz.com'));
+
+/* ============ MULTI-AGENT: roster data ============ */
+const AGENTS = [
+  {id:'gemini', name:'Gemini agent', provider:'gemini', role:'Across your Drive', scope:'global', status:'active', runs:42, created:60, lastRun:0, createdBy:'Built-in',
+   purpose:'Google’s agent that works across your whole Drive — organizes, indexes, renames and routes files in every folder.',
+   lastAction:'Generated the Estate Document Index and renamed 4 files to convention.'},
+  {id:'claude', name:'Claude agent', provider:'claude', role:'In this folder', scope:'folder', status:'active', runs:12, created:14, lastRun:0, createdBy:'Michael Igoe',
+   purpose:'Connected to this folder to review estate documents against current Arizona statute.',
+   lastAction:'Flagged a missing HIPAA authorization for Jeff Wurtz.'},
+];
+const AGENT_CHAT = {
+  gemini:{intro:'I work across your whole Drive. In this folder I built the <b>Estate Document Index</b>, renamed 4 files to convention, and routed David’s executed will in from email. Nothing of mine is blocked.',
+    suggest:['What did you do in this folder?','Rebuild the Index','What else are you watching across Drive?']},
+  claude:{intro:'I was added to <b>this folder</b> to review estate documents against current Arizona statute. One open item: a <b>HIPAA authorization for Jeff Wurtz</b> is referenced in the trust but missing here.',
+    suggest:['Is everything statutorily current?',"What's still missing?",'Re-run the compliance check']},
+};
+const PROVIDER = {
+  gemini:{label:'Gemini'},
+  claude:{label:'Claude'},
+};
+function providerOf(nameOrAgent){
+  if(typeof nameOrAgent==='object' && nameOrAgent) return nameOrAgent.provider||'gemini';
+  return (''+nameOrAgent).indexOf('Claude')>=0 ? 'claude' : 'gemini';
+}
+function claudeMark(px){return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="#D97757"><path d="M12 2c.6 0 1 .4 1 1v6.2l4.4-4.4a1 1 0 011.4 1.4L14.4 11H21a1 1 0 010 2h-6.6l4.4 4.4a1 1 0 01-1.4 1.4L13 14.4V21a1 1 0 01-2 0v-6.6l-4.4 4.4a1 1 0 01-1.4-1.4L9.6 13H3a1 1 0 010-2h6.6L5.2 6.6a1 1 0 011.4-1.4L11 9.6V3c0-.6.4-1 1-1z"/></svg>`;}
+function agentMark(providerOrName,px){ return providerOf(providerOrName)==='claude' ? claudeMark(px) : avatarSpark(px); }
+function scopeBadge(scope){
+  return scope==='global'
+    ? `<span class="scope-b global"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg> All of Drive</span>`
+    : `<span class="scope-b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> This folder</span>`;
+}
+function relWhen(n){return n===0?'today':(n===1?'yesterday':dstr(daysAgo(n)));}
+
+/* ============ presence stack ============ */
+function renderPresence(){
+  const avs=document.getElementById('stackAvs');
+  const cnt=document.getElementById('stackCount');
+  if(!avs||!cnt)return;
+  avs.innerHTML = AGENTS.slice(0,3).map(a=>
+    `<span class="stack-av">${agentMark(a.provider,13)}</span>`
+  ).join('');
+  cnt.innerHTML = `<b>${AGENTS.length}</b>&nbsp;agent${AGENTS.length===1?'':'s'}`;
+}
+
+/* ============ feeds ============ */
+function feedHTMLfrom(items){
+  return items.map(a=>{
+    const init=a.who.split(' ').map(w=>w[0]).slice(0,2).join('');
+    const icon=a.kind==='agent'?agentMark(a.who,17):init;
+    const when=a.when===0?'Today':dstr(daysAgo(a.when));
+    const attach=a.attach?`<div class="fev-attach"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v5h5"/><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2z"/></svg> ${a.attach.file}<span class="undo">Undo</span></div>${a.attach.extra?`<div class="fev-attach" style="margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> ${a.attach.extra}</div>`:''}`:'';
+    const src=a.source?`<div class="fev-src">${srcChip(a.source)}</div>`:'';
+    return `<div class="fev">
+      <div class="fev-rail"><div class="fev-dot ${a.kind}">${icon}</div></div>
+      <div class="fev-body">
+        <div class="fev-top"><b>${a.title}</b><span class="when">${when}</span></div>
+        <div class="fev-desc">${a.desc}</div>
+        ${attach}${src}
+      </div>
+    </div>`;
+  }).join('') || `<div style="color:var(--faint);font-size:13px;padding:8px 0">Nothing had happened in this folder yet at this point in time.</div>`;
+}
+function feedHTML(){
+  return feedHTMLfrom(ACTIVITY.filter(a=>a.when>=state.asOf));
+}
+function renderFeeds(){
+  document.getElementById('homeFeed').innerHTML = feedHTML();
+  if(state.activeAgent){ renderAgentHistory(state.activeAgent); }
+  else { document.getElementById('drawerFeed').innerHTML = feedHTML(); }
+}
+
+/* ============ roster render ============ */
+function renderRoster(){
+  const panel=document.getElementById('rosterPanel');
+  if(!panel)return;
+  if(state.spawning){ renderSpawn(panel); return; }
+  panel.innerHTML = `
+    <button class="roster-newbtn" onclick="openSpawn()">
+      <span class="rn-spark">${avatarSpark(18)}</span>
+      <span class="rn-txt"><b>New agent</b><span>Describe a job; it lives in this folder</span></span>
+    </button>
+    <div class="roster-h">${AGENTS.length} agents working here</div>
+    ${AGENTS.map(a=>`
+      <div class="rcard ${a.status==='paused'?'paused':''}" onclick="openAgentChat('${a.id}')">
+        <div class="rcard-av">${agentMark(a.provider,20)}</div>
+        <div class="rcard-main">
+          <div class="rcard-top"><b>${a.name}</b>${scopeBadge(a.scope)}</div>
+          <div class="rcard-last">${a.lastAction}</div>
+          <div class="rcard-meta">
+            <span>${a.runs} runs</span><span class="dot"></span>
+            <span>last ${relWhen(a.lastRun)}</span><span class="dot"></span>
+            <span class="by">${a.createdBy==='Built-in'?'Built-in':'by '+a.createdBy}</span>
+          </div>
+        </div>
+        <div class="rcard-toggle" onclick="event.stopPropagation();toggleAgent('${a.id}')">
+          <div class="rtoggle ${a.status==='active'?'on':''}" title="${a.status==='active'?'Active — click to pause':'Paused — click to activate'}"></div>
+        </div>
+      </div>`).join('')}`;
+}
+function toggleAgent(id){
+  const a=AGENTS.find(x=>x.id===id); if(!a)return;
+  a.status = a.status==='active'?'paused':'active';
+  renderRoster(); renderPresence();
+  toast(a.name+(a.status==='active'?' resumed':' paused'));
+}
+
+/* ============ spin up a new agent ============ */
+let spawnDraft={name:'',instr:'',trigger:'On demand',provider:'claude'};
+function openSpawn(){ state.spawning=true; spawnDraft={name:'',instr:'',trigger:'On demand',provider:'claude'}; openAgent('roster'); renderRoster(); }
+function cancelSpawn(){ state.spawning=false; renderRoster(); }
+function renderSpawn(panel){
+  panel.innerHTML = `
+    <button class="dw-back" onclick="cancelSpawn()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> All agents
+    </button>
+    <div class="spawn" style="margin-top:14px">
+      <div class="spawn-field">
+        <label>Powered by</label>
+        <div class="spawn-seg" id="spProv">
+          <button class="${spawnDraft.provider==='gemini'?'on':''}" onclick="setSpawnProvider('gemini')">${avatarSpark(14)} Gemini</button>
+          <button class="${spawnDraft.provider==='claude'?'on':''}" onclick="setSpawnProvider('claude')">${claudeMark(14)} Claude</button>
+        </div>
+      </div>
+      <div class="spawn-field">
+        <label>Nickname <span style="color:var(--faint);font-weight:400">(optional)</span></label>
+        <input id="spName" placeholder="e.g. Notary Tracker" value="${spawnDraft.name}" oninput="spawnDraft.name=this.value">
+      </div>
+      <div class="spawn-field">
+        <label>What should it do</label>
+        <textarea id="spInstr" rows="3" placeholder="Watch for unsigned documents and remind me before each notary appointment…" oninput="spawnDraft.instr=this.value">${spawnDraft.instr}</textarea>
+      </div>
+      <div class="spawn-field">
+        <label>Trigger</label>
+        <div class="spawn-seg" id="spSeg">
+          ${['On upload','Daily','On demand'].map(t=>`<button class="${spawnDraft.trigger===t?'on':''}" onclick="setSpawnTrigger('${t}')">${t}</button>`).join('')}
+        </div>
+      </div>
+      <div class="spawn-field">
+        <label>Scope</label>
+        <div class="spawn-scope">${avatarSpark(15)} This folder · <b>Estate docs</b>
+          <svg class="lock" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+        </div>
+      </div>
+      <div class="spawn-actions">
+        <button class="aabtn" onclick="cancelSpawn()">Cancel</button>
+        <button class="aabtn primary" onclick="createAgent()">${avatarSpark(14)} Create agent</button>
+      </div>
+    </div>`;
+}
+function setSpawnTrigger(t){ spawnDraft.trigger=t; document.querySelectorAll('#spSeg button').forEach(b=>b.classList.toggle('on',b.textContent.trim()===t)); }
+function setSpawnProvider(p){ spawnDraft.provider=p; renderRoster(); }
+function createAgent(){
+  const prov=spawnDraft.provider||'claude';
+  const nick=(spawnDraft.name||'').trim();
+  const name=PROVIDER[prov].label+' agent'+(nick?' · '+nick:'');
+  const id='agent'+(AGENTS.length+1)+'-'+Date.now().toString(36);
+  const purpose=(spawnDraft.instr||'').trim()||'A new agent in this folder.';
+  const a={id,name,provider:prov,role:'In this folder',status:'active',runs:0,created:0,lastRun:0,createdBy:'David Wurtz',scope:'folder',
+    purpose, lastAction:'Just created — '+(spawnDraft.trigger==='On demand'?'ready when you are.':spawnDraft.trigger.toLowerCase()+' trigger armed.')};
+  AGENTS.push(a);
+  AGENT_CHAT[id]={intro:`Hi — I'm <b>${name}</b>. ${purpose} I'll run <b>${spawnDraft.trigger.toLowerCase()}</b> in Estate docs.`,
+    suggest:['What will you do first?','Show me your trigger','Pause for now']};
+  ACTIVITY.unshift({kind:'agent', who:name, when:0, title:name,
+    desc:`Created by David Wurtz · ${spawnDraft.trigger} · scoped to Estate docs.`, source:{app:'Drive'}});
+  state.spawning=false;
+  renderRoster(); renderPresence(); renderFeeds(); renderInfo();
+  toast(name+' is now live in this folder');
+}
+
+/* ============ open an agent's scoped chat/history ============ */
+function openAgentChat(id){
+  state.activeAgent=id; state.spawning=false;
+  renderDrawerHead(); renderAgentChat(id); renderAgentHistory(id);
+  switchTab('chat');
+}
+function backToRoster(){ state.activeAgent=null; renderDrawerHead(); renderRoster(); switchTab('roster'); }
+function renderDrawerHead(){
+  const name=document.getElementById('dwHeadName');
+  const head=document.getElementById('dwHead');
+  if(!name||!head)return;
+  let back=document.getElementById('dwBackBtn');
+  const av=head.querySelector('.agent-avatar');
+  if(state.activeAgent){
+    const a=AGENTS.find(x=>x.id===state.activeAgent);
+    if(av) av.innerHTML = agentMark(a.provider,18);
+    name.innerHTML = `${a.name}<span>powered by ${PROVIDER[providerOf(a)].label} · ${a.scope==='global'?'all of Drive':'this folder'}</span>`;
+    if(!back){
+      back=document.createElement('button');
+      back.id='dwBackBtn'; back.className='dw-back'; back.style.marginRight='10px';
+      back.onclick=backToRoster;
+      back.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>';
+      head.insertBefore(back, head.firstChild);
+    }
+  }else{
+    if(av) av.innerHTML = agentMark('gemini',18);
+    name.innerHTML = `Agents<span>in Estate docs</span>`;
+    if(back)back.remove();
+  }
+}
+function renderAgentChat(id){
+  const c=AGENT_CHAT[id]||{intro:'How can I help in this folder?',suggest:[]};
+  chatScroll.innerHTML =
+    `<div class="bubble agent">${c.intro}</div>` +
+    (c.suggest.length?`<div class="chat-suggest">${c.suggest.map(s=>`<button class="sugg" onclick="ask(this)">${s}</button>`).join('')}</div>`:'');
+  const a=AGENTS.find(x=>x.id===id);
+  if(chatBox)chatBox.setAttribute('placeholder',`Ask ${a?a.name:'the agent'}…`);
+}
+function renderAgentHistory(id){
+  const a=AGENTS.find(x=>x.id===id); if(!a)return;
+  const mine=ACTIVITY.filter(ev=>ev.who===a.name && ev.when>=state.asOf);
+  document.getElementById('drawerFeed').innerHTML = mine.length
+    ? feedHTMLfrom(mine)
+    : `<div style="color:var(--faint);font-size:13px;padding:8px 0">${a.name} has no logged activity in this view.</div>`;
+}
+
+/* ============ OPEN ITEMS (tasks) ============ */
+const OPEN_ITEMS = [
+  {id:'hipaa-jeff', agent:'Claude agent',
+   title:'Missing HIPAA authorization for Jeff Wurtz',
+   desc:'The Wurtz Igoe Trust names Jeff Wurtz as a successor health-care agent, but there\'s no HIPAA release for him in this folder. Without it, providers can\'t share records if he ever has to act.',
+   source:{app:'Gmail', label:'from Igoe Law LLP · Jun 4'},
+   action:'Draft request', resolved:false},
+  {id:'will-i-sign', agent:'Gemini agent',
+   title:'Dominique’s Last Will is awaiting signature',
+   desc:'David’s will is executed and notarized; Dominique’s pairs with it but is still a draft. A reminder would keep the two in sync.',
+   source:{app:'Calendar', label:'Estate review · May 28'},
+   action:'Send reminder', resolved:false},
+  {id:'trust-funding', agent:'Claude agent',
+   title:'Trust funding check — General Assignment vs. accounts',
+   desc:'The General Assignment moves assets into the Wurtz Igoe Trust. I can reconcile it against the accounts referenced in the Certification of Trust to confirm nothing was left out.',
+   source:{app:'Drive'},
+   action:'Run check', resolved:false},
+];
+const OI_AGENT_GLYPH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2a4 4 0 014 4v1a4 4 0 01-8 0V6a4 4 0 014-4z"/><path d="M5 21v-1a7 7 0 0114 0v1"/></svg>';
+const OI_RAISED_GLYPH = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 22V4h12l-2 4 2 4H6"/></svg>';
+function oiCardHTML(it){
+  if(it.resolved){
+    return `<div class="oi-card resolved" id="oi-${it.id}">
+      <div class="oi-avatar">${OI_AGENT_GLYPH}</div>
+      <div class="oi-body">
+        <div class="oi-top"><b>${it.title}</b></div>
+        <div class="oi-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5L20 6"/></svg> ${it.resolvedLabel||'Resolved'}</div>
+      </div>
+    </div>`;
+  }
+  return `<div class="oi-card" id="oi-${it.id}">
+    <div class="oi-avatar">${OI_AGENT_GLYPH}</div>
+    <div class="oi-body">
+      <div class="oi-top">
+        <b>${it.title}</b>
+        <span class="oi-raisedby">${OI_RAISED_GLYPH} raised by ${it.agent}</span>
+      </div>
+      <div class="oi-desc">${it.desc}</div>
+      <div class="oi-src" style="margin-top:9px">${srcChip(it.source)}</div>
+      <div class="oi-actions">
+        <button class="oi-btn primary" onclick="resolveItem('${it.id}')">${it.action}</button>
+        <button class="oi-btn" onclick="snoozeItem('${it.id}')">Snooze</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderOpenItems(){
+  const html = OPEN_ITEMS.filter(i=>!i._snoozed).map(oiCardHTML).join('');
+  const h = document.getElementById('openItems');       if(h) h.innerHTML = html;
+  const d = document.getElementById('openItemsDrawer');  if(d) d.innerHTML = html;
+  const n = OPEN_ITEMS.filter(i=>!i.resolved && !i._snoozed).length;
+  const c = document.getElementById('oiCount');
+  if(c) c.textContent = n===0 ? 'all clear' : `${n} open`;
+}
+const OI_RESOLUTIONS = {
+  'hipaa-jeff':{
+    activity:{kind:'agent', who:'Claude agent', when:0, title:'Claude agent',
+      desc:'Drafted an email to Igoe Law LLP requesting a HIPAA authorization for Jeff Wurtz.',
+      source:{app:'Gmail', label:'draft to Igoe Law LLP'},
+      attach:{file:'Re: HIPAA authorization — Jeff Wurtz (draft)'}},
+    resolvedLabel:'Draft composed in Gmail', toast:'Drafted HIPAA request to Igoe Law LLP'},
+  'will-i-sign':{
+    activity:{kind:'agent', who:'Gemini agent', when:0, title:'Gemini agent',
+      desc:'Sent Dominique a reminder to sign her Last Will & Testament.',
+      source:{app:'Gmail', label:'to Dominique Igoe'},
+      attach:{file:'Reminder: sign your Last Will'}},
+    resolvedLabel:'Reminder sent', toast:'Reminder sent to Dominique'},
+  'trust-funding':{
+    activity:{kind:'agent', who:'Claude agent', when:0, title:'Claude agent',
+      desc:'Reconciled the General Assignment against the accounts in the Certification of Trust — all assets are accounted for.',
+      source:{app:'Drive'},
+      attach:{file:'WURTZ_IGOE_General_Assignment.pdf', extra:'Trust funding reconciliation · 0 gaps'}},
+    resolvedLabel:'Check complete — 0 gaps', toast:'Trust funding check complete'},
+};
+function resolveItem(id){
+  const it = OPEN_ITEMS.find(i=>i.id===id); if(!it || it.resolved) return;
+  const r = OI_RESOLUTIONS[id];
+  it.resolved = true;
+  it.resolvedLabel = r ? r.resolvedLabel : 'Resolved';
+  if(r && r.activity){ ACTIVITY.unshift(r.activity); renderFeeds(); renderInfo(); }
+  renderOpenItems();
+  toast(r ? r.toast : 'Resolved');
+}
+function snoozeItem(id){
+  const card = document.getElementById('oi-'+id);
+  if(card){ card.style.opacity='0'; }
+  setTimeout(()=>{ const it=OPEN_ITEMS.find(i=>i.id===id); if(it) it._snoozed=true; renderOpenItems(); renderTasks(); toast('Snoozed for 7 days'); },200);
+}
+
+/* ============ agent tasks: assign + completed ============ */
+let taskAgent='gemini';
+const TASKS=[];
+const TASKS_DONE=[
+  {provider:'gemini', text:'Built the Estate Document Index', when:0},
+  {provider:'claude', text:'Ran the A.R.S. §14-2513 statute currency check', when:0},
+  {provider:'gemini', text:'Renamed 4 files to the folder convention', when:4},
+  {provider:'gemini', text:'Routed David’s executed will in from email', when:5},
+  {provider:'claude', text:'Flagged the missing HIPAA authorization for Jeff Wurtz', when:21},
+];
+function setTaskAgent(p){ taskAgent=p; renderTasks(); const i=document.getElementById('tcInput'); if(i)i.focus(); }
+function taskRowHTML(t){
+  const done=t.status!=='working';
+  const ic=done?'<span class="tk-ic done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M5 12l5 5L20 6"/></svg></span>'
+                :'<span class="tk-ic work"></span>';
+  const when=(t.when===0||t.when===undefined)?'today':relWhen(t.when);
+  return `<div class="tk-row ${done?'':'working'}">${ic}
+    <div class="tk-main"><div class="tk-txt">${t.text}</div>
+    <div class="tk-by">${agentMark(t.provider,12)} ${PROVIDER[t.provider].label} agent · ${done?when:'working…'}</div></div></div>`;
+}
+function renderTasks(){
+  const panel=document.getElementById('tasksPanel'); if(!panel)return;
+  const open=OPEN_ITEMS.filter(i=>!i.resolved && !i._snoozed);
+  const working=TASKS.filter(t=>t.status==='working');
+  const done=TASKS.filter(t=>t.status==='done').concat(TASKS_DONE);
+  panel.innerHTML=`
+    <div class="task-compose">
+      <button class="tc-agent" onclick="setTaskAgent('${taskAgent==='gemini'?'claude':'gemini'}')" title="Switch agent">${agentMark(taskAgent,15)} ${PROVIDER[taskAgent].label}</button>
+      <input id="tcInput" placeholder="Give the ${PROVIDER[taskAgent].label} agent a task…" onkeydown="if(event.key==='Enter')assignTask()">
+      <button class="tc-send" onclick="assignTask()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+    ${open.length?`<h4 class="ip-h" style="margin:20px 0 12px">Needs you</h4><div class="openitems">${open.map(oiCardHTML).join('')}</div>`:''}
+    ${working.length?`<h4 class="ip-h" style="margin:20px 0 10px">In progress</h4>${working.map(taskRowHTML).join('')}`:''}
+    <h4 class="ip-h" style="margin:20px 0 10px">Completed by agents</h4>
+    ${done.map(taskRowHTML).join('')}`;
+}
+function assignTask(){
+  const inp=document.getElementById('tcInput'); if(!inp)return;
+  const text=(inp.value||'').trim(); if(!text)return;
+  const t={id:'t'+Date.now().toString(36),provider:taskAgent,text,status:'working',when:0};
+  TASKS.unshift(t); inp.value=''; renderTasks();
+  toast(PROVIDER[taskAgent].label+' agent is on it');
+  setTimeout(()=>{
+    t.status='done';
+    ACTIVITY.unshift({kind:'agent',who:PROVIDER[t.provider].label+' agent',when:0,title:PROVIDER[t.provider].label+' agent',
+      desc:'Completed a task: “'+text+'”.'});
+    renderTasks(); renderFeeds(); renderInfo();
+    toast(PROVIDER[t.provider].label+' agent finished the task');
+  },2200);
+}
+
+/* ============ context-aware chat suggestions ============ */
+const SUGG_DEFAULT = ['What changed this week?','Is everything statutorily current?','What’s still missing?'];
+function suggestionsFor(f){
+  if(!f) return SUGG_DEFAULT;
+  if(/last will/i.test(f.short)){
+    if(/draft|awaiting/i.test(f.head)) return ['Is this will properly witnessed?','Why is this still a draft?','Send a signature reminder'];
+    return ['Is this will properly witnessed?','Does it match Dominique’s will?','Where was this collected from?'];
+  }
+  if(/power of attorney/i.test(f.short)) return ['Is this POA still effective?','What triggers the springing clause?','Who is named as agent?'];
+  if(/health care directive/i.test(f.short)) return ['Who is the health-care agent?','Does this align with the HIPAA release?','Is this AZ-compliant?'];
+  if(/hipaa/i.test(f.short)) return ['Who can access these records?','Is Jeff Wurtz’s release on file?','Draft the missing authorization'];
+  if(/certification of trust/i.test(f.short)) return ['Does this match the General Assignment?','What accounts are named?','Run a trust funding check'];
+  if(/general assignment/i.test(f.short)) return ['Run a trust funding check','What assets transfer to the trust?','Are any accounts missing?'];
+  if(/tangible/i.test(f.short)) return ['What items are listed here?','Does this reference the will?','Who receives these items?'];
+  if(/inventory/i.test(f.short)) return ['Which assets are still pending?','Is the trust fully funded?','Reconcile against the trust'];
+  if(/summary|open questions/i.test(f.short)) return ['What’s the recommendation?','What’s still open?','Summarize the estate'];
+  if(f.id==='index') return ['Summarize all documents','What’s the one open item?','Re-run the statute check'];
+  return SUGG_DEFAULT;
+}
+function refreshChatSuggestions(){
+  if(state.activeAgent) return; /* agent-scoped chat manages its own suggestions */
+}
+
+/* ============ drawer open/close/tabs ============ */
+const drawer=document.getElementById('drawer'), agentBtn=document.getElementById('agentBtn');
+function openAgent(tab){
+  closeInfo();                       // agent + info share the right slot
+  state.agentOpen=true; drawer.classList.add('open'); agentBtn.classList.add('on');
+  renderDrawerHead(); renderPresence();
+  if(state.activeAgent) renderAgentChat(state.activeAgent); else renderRoster();
+  switchTab(tab || (state.activeAgent?'chat':'roster'));
+}
+function closeAgent(){
+  state.agentOpen=false; state.spawning=false; state.activeAgent=null;
+  drawer.classList.remove('open'); agentBtn.classList.remove('on');
+  renderDrawerHead();
+}
+agentBtn.addEventListener('click',()=>state.agentOpen?closeAgent():openAgent());
+document.getElementById('dwTabs').addEventListener('click',e=>{const t=e.target.closest('.dw-tab');if(t)switchTab(t.dataset.tab);});
+function switchTab(tab){
+  if((tab==='chat'||tab==='history') && !state.activeAgent && !state.spawning){
+    const first=AGENTS.find(a=>a.status==='active')||AGENTS[0];
+    if(first){ openAgentChat(first.id); if(tab==='history'){ switchTab('history'); } return; }
+  }
+  document.querySelectorAll('.dw-tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+  document.querySelectorAll('.dw-panel').forEach(p=>p.classList.toggle('on',p.dataset.panel===tab));
+  if(tab==='tasks') renderTasks();
+}
+
+/* ============ chat ============ */
+const chatScroll=document.getElementById('chatScroll'), chatBox=document.getElementById('chatBox');
+const REPLIES={
+  'what changed this week?':'Three things this week: David uploaded the <b>executed Last Will & Testament</b> (Jun 4), the Gemini agent <b>renamed 4 files</b> to your naming convention (Jun 2), and today it built the <b>Estate Document Index</b> and re-ran the statute check.',
+  'is everything statutorily current?':'Yes — I checked every citation against current Arizona code, including <b>A.R.S. §14-2513</b>. All references are current as of today. I\'ll re-run this automatically whenever a statute referenced here is amended.',
+  'what\'s still missing?':'One open item: a <b>HIPAA authorization for Jeff Wurtz</b> is referenced in the trust but not in this folder. Dominique\'s will is also still a <b>draft</b> awaiting signature. Want me to draft a request for the HIPAA form?',
+  '_default':'I\'ve looked across this folder and the rest of your Workspace. Here\'s what I found related to that — want me to pull the relevant documents together or take an action?'
+};
+function agentReply(id,q){
+  const k=q.toLowerCase();
+  const T={
+    organizer:{
+      'what did you rename?':'On Jun 2 I renamed <b>4 files</b> to your <b>SURNAME_Person_Document</b> convention — both Durable POAs and two directives. Want me to apply it to anything new?',
+      'rebuild the index':'Done — I regenerated the <b>Estate Document Index</b> across all documents. The cover is current as of today.',
+      'how do you name files?':'I use <b>SURNAME_FirstName_DocumentType.pdf</b>, matching the General Assignment\'s party names so everything sorts together.'},
+    legal:{
+      'is everything statutorily current?':'Yes — every citation checks out against current Arizona code, including <b>A.R.S. §14-2513</b>. I re-run this automatically whenever a referenced statute is amended.',
+      "what's still missing?":'One open item: a <b>HIPAA authorization for Jeff Wurtz</b> is referenced in the trust but not in this folder. Dominique\'s will is also still a <b>draft</b>. Want me to draft a request?',
+      're-run the compliance check':'Re-ran it just now — <b>11 of 12</b> documents pass cleanly; the HIPAA gap for Jeff Wurtz remains the only flag.'},
+    intake:{
+      'what did you route last?':'I routed David\'s <b>executed Last Will & Testament</b> from an email on Jun 4 straight into Estate docs, then handed it to the Gemini agent for naming.',
+      'what are you watching for?':'Anything that looks like an estate document arriving by email — wills, trusts, POAs, directives, HIPAA forms — addressed to you or Dominique.',
+      'pause new intake':'Paused. I\'ll stop routing new uploads here until you switch me back on in the roster.'},
+  };
+  if(id && T[id] && T[id][k]) return T[id][k];
+  return REPLIES[k] || REPLIES._default;
+}
+function pushBubble(cls,html){const b=document.createElement('div');b.className='bubble '+cls;b.innerHTML=html;chatScroll.appendChild(b);chatScroll.scrollTop=chatScroll.scrollHeight;return b;}
+function ask(el){chatBox.value=el.textContent;sendChat();}
+function sendChat(){
+  const q=chatBox.value.trim(); if(!q)return;
+  document.querySelectorAll('.chat-suggest').forEach(s=>s.remove());
+  pushBubble('user',q); chatBox.value=''; chatBox.style.height='auto';
+  const typing=pushBubble('agent','<span style="opacity:.5">thinking…</span>');
+  const ans = agentReply(state.activeAgent, q);
+  setTimeout(()=>{typing.innerHTML=ans;},650);
+}
+chatBox.addEventListener('input',()=>{chatBox.style.height='auto';chatBox.style.height=chatBox.scrollHeight+'px';});
+chatBox.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+
+/* ============ info / activity panel with vertical time scrubber ============ */
+function tmTicksHTML(){ return ''; } /* legacy no-op (time machine now lives in info panel) */
+function asOfIndex(){
+  const exact=ACTIVITY.findIndex(a=>a.when===state.asOf);
+  if(exact>=0) return exact;
+  let best=0; ACTIVITY.forEach((a,i)=>{ if(a.when<=state.asOf) best=i; }); return best;
+}
+function vtlRowHTML(a,i,idx){
+  const future=i<idx;
+  const when=a.when===0?'Today':dstr(daysAgo(a.when));
+  const who=a.kind==='agent'?`<span class="vtl-mark">${agentMark(a.who,15)}</span>`
+    :`<span class="vtl-mark vtl-init">${a.who.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>`;
+  return `<div class="vtl-row ${future?'future':''} ${i===idx?'asof':''}" data-i="${i}" onclick="setAsOfIndex(${i})">
+    <div class="vtl-top">${who}<b>${a.title}</b><span class="when">${when}</span></div>
+    <div class="vtl-desc">${a.desc}</div>
+  </div>`;
+}
+function renderInfo(){
+  if(!state.infoOpen) return;
+  const vis=getVisibleFiles().length;
+  const idx=asOfIndex();
+  const label=state.asOf===0?'Today':daysAgo(state.asOf).toLocaleDateString('en-US',{month:'long',day:'numeric'});
+  const hint=state.asOf===0?'Showing the folder now':`Showing the folder ${state.asOf} day${state.asOf===1?'':'s'} ago`;
+  document.getElementById('ipBody').innerHTML=`
+    <div class="ip-stats">
+      <div class="ip-stat"><div class="k">Items</div><div class="v">${vis}</div></div>
+      <div class="ip-stat"><div class="k">Owner</div><div class="v">David Wurtz</div></div>
+      <div class="ip-stat"><div class="k">Agents</div><div class="v">${SPARK} ${AGENTS.filter(a=>a.status==='active').length} active</div></div>
+      <div class="ip-stat"><div class="k">Open items</div><div class="v">1</div></div>
+    </div>
+    <div class="ip-time-hd">
+      <div><div class="k">Folder as of</div><div class="v serif">${label}</div><div class="ip-hint">${hint}</div></div>
+      <button class="ip-now ${state.asOf===0?'ghost':''}" onclick="resetTime()">Back to now</button>
+    </div>
+    <div class="vtl" id="vtl">
+      <div class="vtl-line" id="vtlLine"></div>
+      <div class="vtl-line-fill" id="vtlFill"></div>
+      <div class="vtl-knob" id="vtlKnob" title="Drag to rewind"></div>
+      <div class="vtl-rows" id="vtlRows">${ACTIVITY.map((a,i)=>vtlRowHTML(a,i,idx)).join('')}</div>
+    </div>`;
+  layoutTimeline(); bindKnob();
+}
+function layoutTimeline(){
+  const vtl=document.getElementById('vtl'); if(!vtl)return;
+  const rows=[...vtl.querySelectorAll('.vtl-row')]; if(!rows.length)return;
+  vtl.querySelectorAll('.vtl-tick').forEach(t=>t.remove());
+  const centers=rows.map(r=>r.offsetTop+18);
+  const line=document.getElementById('vtlLine');
+  line.style.top=centers[0]+'px'; line.style.height=(centers[centers.length-1]-centers[0])+'px';
+  centers.forEach(cy=>{ const t=document.createElement('div'); t.className='vtl-tick'; t.style.top=cy+'px'; vtl.appendChild(t); });
+  const idx=asOfIndex();
+  document.getElementById('vtlKnob').style.top=centers[idx]+'px';
+  const fill=document.getElementById('vtlFill'); fill.style.top=centers[0]+'px'; fill.style.height=(centers[idx]-centers[0])+'px';
+}
+function bindKnob(){
+  const knob=document.getElementById('vtlKnob'), vtl=document.getElementById('vtl'); if(!knob)return;
+  function nearest(clientY){
+    const rs=[...vtl.querySelectorAll('.vtl-row')]; let best=0,bd=1e9;
+    rs.forEach((r,i)=>{const b=r.getBoundingClientRect();const cy=b.top+18;const d=Math.abs(cy-clientY);if(d<bd){bd=d;best=i;}});
+    return best;
+  }
+  function move(e){ const i=nearest(e.clientY); if(ACTIVITY[i].when!==state.asOf) setAsOfIndex(i); e.preventDefault(); }
+  function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); }
+  knob.addEventListener('pointerdown',e=>{ e.preventDefault(); document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); });
+}
+function setAsOfIndex(i){
+  state.asOf=ACTIVITY[i].when;
+  renderList(); renderGallery(); if(state.view==='carousel')renderCarousel();
+  renderInfo();
+}
+function resetTime(){ setAsOfIndex(0); }
+function closeInfo(){
+  if(!state.infoOpen) return;
+  state.infoOpen=false;
+  document.getElementById('infopanel').classList.remove('open');
+  document.getElementById('infoBtn').classList.remove('on');
+}
+function openInfo(){
+  if(typeof closeAgent==='function' && state.agentOpen) closeAgent();  // share the right slot
+  state.infoOpen=true;
+  document.getElementById('infopanel').classList.add('open');
+  document.getElementById('infoBtn').classList.add('on');
+  renderInfo();
+}
+function toggleInfo(){ state.infoOpen ? closeInfo() : openInfo(); }
+document.getElementById('infoBtn').addEventListener('click',toggleInfo);
+
+/* ============ rail ============ */
+let _railManual=false;
+document.getElementById('railToggle').addEventListener('click',()=>{ _railManual=true; document.getElementById('app').classList.toggle('rail-collapsed'); });
+function autoRail(){ if(_railManual) return; document.getElementById('app').classList.toggle('rail-collapsed', window.innerWidth<1180); }
+window.addEventListener('resize', autoRail); autoRail();
+
+/* ============ global dismiss ============ */
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.ctx-menu')) closeRowCtx();
+  if(!e.target.closest('#wafflePop') && !e.target.closest('#waffleBtn')) wafflePop.classList.remove('open');
+  if(!e.target.closest('#gearMenu')  && !e.target.closest('#gearBtn'))  gearMenu.classList.remove('open');
+});
+
+/* ============ keyboard nav (query-aware) ============ */
+document.addEventListener('keydown',e=>{
+  if(document.activeElement.tagName==='TEXTAREA')return;
+  if(e.key==='Escape' && document.activeElement===searchInput){
+    searchInput.value=''; state.query=''; renderList(); searchInput.blur(); return;
+  }
+  if(document.activeElement.tagName==='INPUT')return;
+  if(state.view==='carousel' && !state.focused){
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();cfGo(carIndex+1);}
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();cfGo(carIndex-1);}
+    if(e.key==='Enter'){e.preventDefault();openFromCarousel(carIndex);}
+    if(e.key==='Escape'){ if(state.agentOpen) closeAgent(); }
+    return;
+  }
+  const visible=getVisibleFiles();
+  if((e.key==='ArrowDown'||e.key==='ArrowUp') && visible.length){
+    e.preventDefault();
+    let i=visible.findIndex(f=>f.id===state.selected);
+    i = e.key==='ArrowDown' ? Math.min(visible.length-1,i+1) : Math.max(0,i-1);
+    if(i<0)i=0;
+    selectFile(visible[i].id);
+    const row=document.querySelector('.frow.active'); row&&row.scrollIntoView({block:'nearest'});
+  }
+  if(e.key==='Escape'){
+    if(rowCtx.classList.contains('open')){ closeRowCtx(); return; }
+    if(state.checked.size>0){ clearChecks(); return; }
+    if(state.query){ searchInput.value=''; state.query=''; renderList(); return; }
+    if(state.selected) clearSelection();
+    else if(state.agentOpen) closeAgent();
+  }
+});
+
+/* ============ toast ============ */
+function toast(msg){
+  const t=document.createElement('div');t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:11px;font-size:13px;font-weight:600;z-index:99;box-shadow:var(--shadow-lg);animation:rise .3s var(--ease)';
+  document.body.appendChild(t);setTimeout(()=>t.remove(),1900);
+}
+
+/* ============ init ============ */
+/* ============ live collaborators (Figma-style cursors) ============ */
+const COLLAB=[{name:'Dominique',color:'#1a73e8'},{name:'Michael Igoe',color:'#d93025'}];
+function renderPvPresence(){
+  const p=document.getElementById('pvPresence'); if(!p)return;
+  p.innerHTML=COLLAB.map(u=>`<span class="pa" style="background:${u.color}" title="${u.name} is here">${u.name[0]}</span>`).join('');
+}
+function initCursors(){
+  const c=document.getElementById('pvCursors'); if(!c)return;
+  c.innerHTML=COLLAB.map((u,i)=>
+    `<div class="fcur" id="fcur${i}"><svg width="20" height="20" viewBox="0 0 24 24" fill="${u.color}"><path d="M5 3l15 6.4-6.1 2.2-2.2 6.1z"/></svg><span class="fcur-lbl" style="background:${u.color}">${u.name}</span></div>`
+  ).join('');
+  COLLAB.forEach((u,i)=>{ setTimeout(()=>moveCur(i), 300+i*500); });
+}
+function moveCur(i){
+  const el=document.getElementById('fcur'+i); const c=document.getElementById('pvCursors');
+  if(!el||!c) return;
+  const w=c.clientWidth||520, h=c.clientHeight||520;
+  const x=30+Math.random()*Math.max(60,w-150), y=20+Math.random()*Math.max(60,h-120);
+  el.style.transform=`translate(${x}px,${y}px)`;
+  setTimeout(()=>moveCur(i), 1500+Math.random()*1700);
+}
+
+renderPresence();
+renderRoster();
+renderDrawerHead();
+renderOpenItems(); renderTasks();
+renderPvPresence(); initCursors();
+renderList(); renderFeeds(); renderInfo();
+const _p=new URLSearchParams(location.search), _v=_p.get('v'), _sel=_p.get('sel');
+if(_v){ setView(_v); } else { setView('list'); selectFile('index'); }
+if(_sel){ setView('list'); selectFile(_sel); }
+if(_p.get('info')==='0'){ toggleInfo(); }
+if(_p.get('panel')==='agents'){ openAgent(_p.get('tab')||undefined); }
+if(_p.get('focus')){ setView('gallery'); openFocused(_p.get('focus')); }
+</script>
+</body>
+</html>
