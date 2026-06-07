@@ -2246,6 +2246,8 @@ function setView(v){
   state.focused=false;
   document.getElementById('app').classList.toggle('in-carousel', v==='carousel');
   document.getElementById('listpane').classList.remove('collapsed');
+  document.getElementById('screen').classList.add('ghost');            // leave the My Drive / landing screen
+  document.querySelector('.stage-wrap').classList.remove('ghost');     // show the content area
   document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
   const full=(v==='gallery'||v==='carousel'||v==='columns');
