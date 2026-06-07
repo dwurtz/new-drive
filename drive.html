@@ -3205,7 +3205,10 @@ function getTokenClient(){
     driveTokenClient=google.accounts.oauth2.initTokenClient({ client_id:cid, scope:DRIVE_SCOPE,
       callback:(r)=>{ const cb=_tokenCb; _tokenCb=null;
         if(r&&r.access_token){ driveToken=r.access_token; tokenExpiry=Date.now()+((r.expires_in||3600)*1000);
-          localStorage.setItem('gdrive_connected','1'); scheduleRefresh(); if(cb) cb(true); }
+          localStorage.setItem('gdrive_connected','1');
+          localStorage.setItem('gdrive_token', driveToken);
+          localStorage.setItem('gdrive_token_exp', String(tokenExpiry));
+          scheduleRefresh(); if(cb) cb(true); }
         else { if(cb) cb(false); } },
       error_callback:(e)=>{ const cb=_tokenCb; _tokenCb=null; if(cb) cb(false); } });
   }
@@ -3226,6 +3229,7 @@ function driveApi(path){
   const url='https://www.googleapis.com/drive/v3/'+path;
   return fetch(url,{headers:authHeaders()}).then(r=>{
     if(r.status===401){ // token expired — refresh silently and retry once
+      localStorage.removeItem('gdrive_token'); localStorage.removeItem('gdrive_token_exp');
       return new Promise((res,rej)=>{ requestToken(true,(ok)=>{
         if(!ok){ rej(new Error('session expired — click your avatar to reconnect')); return; }
         fetch(url,{headers:authHeaders()}).then(r2=>{ if(!r2.ok) rej(new Error('Drive '+r2.status)); else res(r2.json()); }).catch(rej);
@@ -3490,12 +3494,16 @@ renderRoster();
 renderDrawerHead();
 renderTasks(); renderPins(); renderNavFolders();
 showConnectLanding();   // no demo data — connect to load real Drive
-// auto-reconnect (silent, no popup) if previously connected
-(function autoReconnect(tries){
+// restore session: reuse the saved token if still valid (no popup), else silently re-acquire
+(function restoreSession(tries){
+  const tok=localStorage.getItem('gdrive_token'), exp=+(localStorage.getItem('gdrive_token_exp')||0);
+  if(tok && exp > Date.now()+60000){         // saved token still good for >1 min → use it directly, no auth
+    driveToken=tok; tokenExpiry=exp; state.live=true; scheduleRefresh(); loadDriveRoot(); return;
+  }
   if(!localStorage.getItem('gdrive_connected')) return;
-  if(gisReady()){ silentConnect(); return; }
-  if(tries>40) return;                       // give up after ~8s
-  setTimeout(()=>autoReconnect((tries||0)+1), 200);
+  if(gisReady()){ silentConnect(); return; } // token expired/missing — try silent re-acquire
+  if(tries>40) return;
+  setTimeout(()=>restoreSession((tries||0)+1), 200);
 })(0);
 </script>
 </body>
