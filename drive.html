@@ -999,13 +999,23 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .col-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .col-chev{color:var(--faint);flex:none;font-size:15px}
 .col-load,.col-empty{padding:14px 10px;color:var(--faint);font-size:12.5px}
-.col-preview{flex:1 1 380px;min-width:340px;background:var(--surface-2)}
-.cp{padding:32px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;max-width:640px;margin:0 auto}
+.col-preview{flex:1 1 380px;min-width:340px;background:var(--surface-2);display:flex;flex-direction:column;overflow:hidden;border-right:none}
+.cp-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
+.cp-head-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.cp-doc{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px}
+.cp-live-img{max-width:100%;border-radius:6px;box-shadow:var(--shadow-md)}
+.cp-doc .pv-pdf-pagewrap{cursor:default;margin:0 auto}
+.cp-live-frame{width:100%;height:100%;min-height:480px;border:none;background:#fff;border-radius:6px}
+.cp-load{margin:auto;color:var(--faint);font-size:13px;padding:24px;text-align:center}
+.cp{padding:32px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;max-width:640px;margin:auto}
 .cp-img{max-width:min(100%,560px);max-height:70vh;border-radius:8px;box-shadow:var(--shadow-md)}
 .cp-icon img{width:72px;height:72px}
 .cp-name{font-weight:600;font-size:14.5px;word-break:break-word;line-height:1.35}
 .cp-meta{font-size:12px;color:var(--faint);line-height:1.7}
 .cp-open{margin-top:4px}
+/* gallery keyboard selection */
+.gcard.active{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px}
+.cover-hero.active{outline:2px solid var(--accent);outline-offset:3px;border-radius:14px}
 
 svg{display:block}
 .ghost{display:none!important}
@@ -2045,7 +2055,7 @@ function renderGallery(){
   const folders = items.filter(f=>f.isFolder).length, files = items.length-folders;
   const fname = (state.curFolder&&state.curFolder.name)||'My Drive';
   gallery.innerHTML = `
-    <div class="cover-hero" onclick="${cover.isFolder?`openLiveFolder('${cover.id}','${escapeHTML(cover.name)}')`:`selectFile('${cover.id}')`}" style="cursor:pointer">
+    <div class="cover-hero ${state.selected===cover.id?'active':''}" onclick="${cover.isFolder?`openLiveFolder('${cover.id}','${escapeHTML(cover.name)}')`:`selectFile('${cover.id}')`}" style="cursor:pointer">
       <div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${renderThumb(cover,'gallery')}</div></div>
       <div>
         <div class="cover-title">${escapeHTML(cover.name)}</div>
@@ -2060,7 +2070,7 @@ function renderGallery(){
     <h3 class="section-h" style="padding:0 2px">All items</h3>
     <div class="gal-grid">
       ${others.map(f=>`
-        <div class="gcard" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${f.id}',this.dataset.n)`:`selectFile('${f.id}')`}">
+        <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${f.id}',this.dataset.n)`:`selectFile('${f.id}')`}">
           <div class="gpage">${renderThumb(f,'gallery')}</div>
           <div class="gcard-foot"><b>${escapeHTML(f.short)}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
         </div>`).join('')}
@@ -3186,16 +3196,34 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){ if(state.agentOpen) closeAgent(); }
     return;
   }
-  const visible=getVisibleFiles();
-  if((e.key==='ArrowDown'||e.key==='ArrowUp') && visible.length && !state.focused){
-    e.preventDefault();
-    let i=visible.findIndex(f=>f.id===state.selected);
-    i = e.key==='ArrowDown' ? Math.min(visible.length-1,i+1) : Math.max(0,i-1);
-    if(i<0)i=0;
-    state.selected=visible[i].id; renderList(); if(state.infoOpen) renderInfo(); syncUrl();   // highlight only
-    const row=document.querySelector('.frow.active'); row&&row.scrollIntoView({block:'nearest'});
+  const arrow = (e.key==='ArrowDown'||e.key==='ArrowUp'||e.key==='ArrowLeft'||e.key==='ArrowRight');
+  // ---- arrow navigation per view (when not in the full-width focused preview) ----
+  if(arrow && !state.focused){
+    if(state.view==='columns'){
+      e.preventDefault();
+      if(e.key==='ArrowDown'||e.key==='ArrowUp') colArrow(e.key); else colHoriz(e.key);
+      return;
+    }
+    if(state.view==='gallery'){
+      e.preventDefault(); galleryArrow(e.key); return;
+    }
+    // list view
+    const visible=getVisibleFiles();
+    if((e.key==='ArrowDown'||e.key==='ArrowUp') && visible.length){
+      e.preventDefault();
+      let i=visible.findIndex(f=>f.id===state.selected);
+      i = e.key==='ArrowDown' ? Math.min(visible.length-1,i+1) : Math.max(0,i-1);
+      if(i<0)i=0;
+      state.selected=visible[i].id; renderList(); if(state.infoOpen) renderInfo(); syncUrl();   // highlight only
+      const row=document.querySelector('.frow.active'); row&&row.scrollIntoView({block:'nearest'});
+    }
   }
-  if(e.key==='Enter' && state.view==='list' && state.selected && !state.focused){ e.preventDefault(); rowOpen(state.selected); }
+  // ---- Enter opens the current selection ----
+  if(e.key==='Enter' && !state.focused){
+    if(state.view==='list' && state.selected){ e.preventDefault(); rowOpen(state.selected); }
+    else if(state.view==='columns' && colFileObj){ e.preventDefault(); openColFile(); }
+    else if(state.view==='gallery' && state.selected){ e.preventDefault(); openFocused(state.selected); }
+  }
   if(e.key==='Escape'){
     if(rowCtx.classList.contains('open')){ closeRowCtx(); return; }
     if(state.checked.size>0){ clearChecks(); return; }
@@ -3457,13 +3485,64 @@ function renderColumns(){
   });
   if(colSelectedFile&&colFileObj){
     const f=colFileObj, pcol=document.createElement('div'); pcol.className='col col-preview'; cont.appendChild(pcol);
-    const thumb = (f.type==='image'&&f.thumbnailLink) ? `<img class="cp-img" src="${f.thumbnailLink.replace(/=s\d+.*$/,'=s1600')}" referrerpolicy="no-referrer">`
-      : `<div class="cp-icon">${f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16()}</div>`;
-    pcol.innerHTML=`<div class="cp">${thumb}<div class="cp-name">${f.name}</div>
-      <div class="cp-meta">${typeLabel(f)} · ${f.size||'—'}<br>Modified ${dstr(daysAgo(f.added))}</div>
-      <button class="aabtn primary cp-open" onclick="openColFile()">Open</button></div>`;
+    pcol.innerHTML=`<div class="cp-head"><div class="cp-head-name">${escapeHTML(f.name)}</div>
+      <button class="aabtn cp-openbtn" onclick="openColFile()">Open ↗</button></div>
+      <div class="cp-doc" id="colPvDoc"></div>`;
+    renderColPreview(f, pcol.querySelector('#colPvDoc'));
   }
   cont.scrollLeft=cont.scrollWidth;
+}
+/* render the actual file content inside the column preview pane */
+function colPreviewable(f){
+  if(f.isFolder) return false;
+  if(f.type==='image') return true;
+  const m=f.mimeRaw||'';
+  if(m==='application/pdf') return true;
+  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return true;
+  if(!m && /^pdf$/i.test(f.ext||'')) return true;   // pin/stub without a stored mime
+  return false;
+}
+function renderColPreview(f, box){
+  if(!box) return;
+  if(f.type==='image'){
+    box.innerHTML='<div class="cp-load">Loading…</div>';
+    fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media',{headers:authHeaders()})
+      .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
+      .then(b=>{ if(colSelectedFile!==f.id) return; box.innerHTML=`<img class="cp-live-img" src="${URL.createObjectURL(b)}" referrerpolicy="no-referrer">`; })
+      .catch(e=>{ if(colSelectedFile===f.id) box.innerHTML='<div class="cp-load">Could not load image ('+e.message+')</div>'; });
+    return;
+  }
+  if(colPreviewable(f)){
+    box.innerHTML='<div class="cp-load">Loading…</div>';
+    if(!window.pdfjsLib){ box.innerHTML=`<iframe class="cp-live-frame" src="${f.previewUrl}" referrerpolicy="no-referrer"></iframe>`; return; }
+    fetch(liveDocUrl(f),{headers:authHeaders()})
+      .then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
+      .then(pdf=>{
+        if(colSelectedFile!==f.id) return;
+        box.innerHTML='';
+        const targetW=Math.min(760,(box.clientWidth||600)-40);
+        const seq=[];
+        for(let i=1;i<=pdf.numPages;i++){
+          seq.push(pdf.getPage(i).then(page=>{
+            if(colSelectedFile!==f.id) return;
+            const base=page.getViewport({scale:1}), scale=targetW/base.width, vp=page.getViewport({scale:scale*2});
+            const wrap=document.createElement('div'); wrap.className='pv-pdf-pagewrap'; wrap.style.width=(vp.width/2)+'px';
+            const c=document.createElement('canvas'); c.className='pv-pdf-page'; c.width=vp.width; c.height=vp.height; c.style.width='100%';
+            wrap.appendChild(c); box.appendChild(wrap);
+            return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+          }));
+        }
+        return Promise.all(seq);
+      })
+      .catch(e=>{ if(colSelectedFile===f.id) box.innerHTML='<div class="cp-load">Could not render document ('+e.message+')</div>'; });
+    return;
+  }
+  // not previewable in-browser → icon + Open
+  const thumb = f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16();
+  box.innerHTML=`<div class="cp"><div class="cp-icon">${thumb}</div><div class="cp-name">${escapeHTML(f.name)}</div>
+    <div class="cp-meta">${escapeHTML(kindLabel(f))} · ${f.size||'—'}</div>
+    <button class="aabtn primary cp-open" onclick="openColFile()">Open ↗</button></div>`;
 }
 function colClick(level,id){
   const items=colCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
@@ -3474,6 +3553,70 @@ function colClick(level,id){
   syncUrl();
 }
 function openColFile(){ const f=colFileObj; if(!f) return; if(!FILES.find(x=>x.id===f.id)) FILES.push(f); openFocused(f.id); }
+/* ---- keyboard navigation in column (Finder) view ---- */
+function colActiveContext(){
+  // the column that currently holds the selection: {level, folderId, index}
+  if(colSelectedFile){
+    const folder=COL_PATH[COL_PATH.length-1];
+    const items=colCache[folder.id]||[];
+    return {level:COL_PATH.length-1, folderId:folder.id, items, index:items.findIndex(x=>x.id===colSelectedFile)};
+  }
+  if(COL_PATH.length>=2){
+    const parent=COL_PATH[COL_PATH.length-2], cur=COL_PATH[COL_PATH.length-1];
+    const items=colCache[parent.id]||[];
+    return {level:COL_PATH.length-2, folderId:parent.id, items, index:items.findIndex(x=>x.id===cur.id)};
+  }
+  const items=colCache[COL_PATH[0].id]||[];
+  return {level:0, folderId:COL_PATH[0].id, items, index:-1};
+}
+function colSelectAt(level, item){
+  const base=COL_PATH.slice(0, level+1);
+  if(item.isFolder){
+    COL_PATH=base.concat([{id:item.id,name:item.name}]); colSelectedFile=null; colFileObj=null;
+    state.curFolder={id:item.id,name:item.name}; setScopeChip(item.name);
+    colChildren(item.id).then(()=>{ if(COL_PATH[COL_PATH.length-1] && COL_PATH[COL_PATH.length-1].id===item.id) renderColumns(); });
+    renderColumns();
+  } else {
+    COL_PATH=base; colSelectedFile=item.id; colFileObj=item; renderColumns();
+  }
+  const r=document.querySelector('.col-row.sel'); r&&r.scrollIntoView({block:'nearest'});
+  syncUrl();
+}
+function colArrow(key){
+  const ctx=colActiveContext();
+  const go=(items)=>{
+    if(!items||!items.length) return;
+    let i=ctx.index;
+    if(key==='ArrowDown') i = i<0 ? 0 : Math.min(items.length-1, i+1);
+    else i = i<=0 ? 0 : i-1;
+    colSelectAt(ctx.level, items[i]);
+  };
+  if(ctx.items && ctx.items.length) go(ctx.items);
+  else colChildren(ctx.folderId).then(go);
+}
+function colHoriz(key){
+  if(key==='ArrowRight'){
+    if(!colSelectedFile && COL_PATH.length>=1){   // step into the highlighted folder
+      const folder=COL_PATH[COL_PATH.length-1];
+      colChildren(folder.id).then(items=>{ if(items&&items[0]) colSelectAt(COL_PATH.length-1, items[0]); });
+    }
+  } else if(key==='ArrowLeft'){
+    if(colSelectedFile){ colSelectedFile=null; colFileObj=null; renderColumns(); }   // back to the containing folder
+    else if(COL_PATH.length>1){ COL_PATH=COL_PATH.slice(0,COL_PATH.length-1); state.curFolder=COL_PATH[COL_PATH.length-1]; setScopeChip(state.curFolder.id==='root'?null:state.curFolder.name); renderColumns(); }
+    syncUrl();
+  }
+}
+/* ---- keyboard navigation in gallery view ---- */
+function galleryArrow(key){
+  const vis=getVisibleFiles(); if(!vis.length) return;
+  let i=vis.findIndex(f=>f.id===state.selected);
+  if(i<0) i=0;
+  else if(key==='ArrowDown'||key==='ArrowRight') i=Math.min(vis.length-1,i+1);
+  else i=Math.max(0,i-1);
+  state.selected=vis[i].id; renderGallery();
+  const el=document.querySelector('.gcard.active, .cover-hero.active'); el&&el.scrollIntoView({block:'nearest'});
+  syncUrl();
+}
 /* ---- live image (white viewer) + real Drive comments ---- */
 let liveComments=[], liveCommentFile=null;
 function loadLiveImage(f){
