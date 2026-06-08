@@ -272,6 +272,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .qbtn:hover{background:var(--line-2);color:var(--ink)}
 .frow:hover .star{opacity:0}
 
+/* ===== Finder-style full-width list view ===== */
+.listpane.finder{width:auto;flex:1;border-right:none}
+.listpane.finder .lp-head{padding:14px 18px 8px 12px}
+.listpane.finder .lp-sort{display:none}
+.fcols{display:none;grid-template-columns:minmax(0,1fr) 110px 170px 200px;gap:11px;align-items:center;padding:9px 18px 9px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:3}
+.listpane.finder .fcols{display:grid}
+.fcol{font-size:11.5px;font-weight:600;color:var(--muted);letter-spacing:.02em;cursor:pointer;display:inline-flex;align-items:center;gap:4px;user-select:none;white-space:nowrap;border-radius:6px;padding:3px 6px;justify-self:start}
+.fcol:hover{background:var(--hover);color:var(--ink)}
+.fcol.on{color:var(--ink)}
+.fcol.num{justify-self:end}
+.fcol .ar{font-size:10px;color:var(--accent)}
+.listpane.finder .lp-list{padding:4px 0 16px}
+.listpane.finder .frow{display:grid;grid-template-columns:minmax(0,1fr) 110px 170px 200px;gap:11px;align-items:center;padding:6px 18px 6px 12px;border-radius:8px}
+.fc-name{display:flex;align-items:center;gap:9px;min-width:0}
+.fc-name .nm{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-ic{width:18px;height:18px;flex:none;display:grid;place-items:center;color:var(--muted)}
+.fc-ic img{width:16px;height:16px;object-fit:contain}
+.fc-size{font-size:12.5px;color:var(--muted);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fc-kind,.fc-date{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.listpane.finder .frow .fcheck{order:-1}
+.listpane.finder .frow:hover:not(.active){background:var(--hover)}
+.listpane.finder .frow.active{background:var(--accent)}
+.listpane.finder .frow.active .nm{color:#fff}
+.listpane.finder .frow.active .fc-ic{color:rgba(255,255,255,.92)}
+.listpane.finder .frow.active .fc-ic img{filter:brightness(0) invert(1)}
+.listpane.finder .frow.active .fc-size,.listpane.finder .frow.active .fc-kind,.listpane.finder .frow.active .fc-date{color:rgba(255,255,255,.82)}
+.listpane.finder .frow.checked:not(.active){background:var(--sel)}
+
 /* right-click context menu */
 .ctx-menu{
   position:fixed;z-index:200;min-width:208px;background:var(--surface);
@@ -1109,6 +1137,7 @@ svg{display:block}
             <span class="lp-count-wrap"><span id="lpCount">0 items</span> · </span>
             <span class="lp-sort" onclick="toggleSortMenu(event)"><span id="lpSortLabel">Last modified</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
           </div>
+          <div class="fcols" id="fcols"></div>
           <div class="lp-list" id="fileList"></div>
           <div class="gallery ghost" id="gallery"></div>
           <div class="carousel ghost" id="carousel"></div>
@@ -1541,6 +1570,54 @@ function thumbSheet(f){
 function typeLabel(f){
   return {brief:'PDF',doc:'PDF',pdf:'PDF',image:'JPG',sheet:'SHEET',gdoc:'DOC',webapp:'HTML'}[f.type]||f.ext||'PDF';
 }
+/* Finder-style "Kind" column */
+function kindLabel(f){
+  if(f.isFolder) return 'Folder';
+  const m=f.mimeRaw||'';
+  if(m==='application/vnd.google-apps.document') return 'Google Doc';
+  if(m==='application/vnd.google-apps.spreadsheet') return 'Google Sheet';
+  if(m==='application/vnd.google-apps.presentation') return 'Google Slides';
+  if(m==='application/vnd.google-apps.form') return 'Google Form';
+  if(m==='application/pdf') return 'PDF document';
+  if(/^image\/jpe?g/.test(m)) return 'JPEG image';
+  if(/^image\/png/.test(m)) return 'PNG image';
+  if(/^image\/gif/.test(m)) return 'GIF image';
+  if(/^image\//.test(m)) return 'Image';
+  if(/^video\//.test(m)) return 'Video';
+  if(/^audio\//.test(m)) return 'Audio';
+  if(/(zip|compressed|x-7z|x-rar|x-tar|gzip)/.test(m)) return 'ZIP archive';
+  if(/wordprocessingml|msword/.test(m)) return 'Word document';
+  if(/spreadsheetml|ms-excel/.test(m)) return 'Excel spreadsheet';
+  if(/presentationml|ms-powerpoint/.test(m)) return 'PowerPoint';
+  if(/^text\/|json|markdown|javascript|xml/.test(m)) return (f.ext?f.ext+' ':'')+'document';
+  return f.ext ? f.ext+' file' : 'Document';
+}
+/* Finder-style date: "Today at 3:10 PM" / "Jun 5, 2026 at 6:10 PM" */
+function fileDateStr(f){
+  const ms=f.modifiedAt; if(!ms) return '—';
+  const d=new Date(ms), now=new Date();
+  const time=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const day=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const diff=Math.round((today-day)/864e5);
+  if(diff===0) return 'Today at '+time;
+  if(diff===1) return 'Yesterday at '+time;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+time;
+}
+function finderIcon(f){
+  if(f.isFolder) return `<span class="fc-ic">${folderIco16()}</span>`;
+  if(f.live && (f.iconLink||f.thumbnailLink)) return `<span class="fc-ic"><img src="${f.iconLink||f.thumbnailLink}" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode(''))"></span>`;
+  return `<span class="fc-ic">${fileIco16()}</span>`;
+}
+const FCOLS=[{k:'name',label:'Name'},{k:'size',label:'Size',num:true},{k:'kind',label:'Kind'},{k:'modified',label:'Date Modified'}];
+function renderColsHeader(){
+  const el=document.getElementById('fcols'); if(!el) return;
+  el.innerHTML=FCOLS.map(c=>{
+    const on=SORT.key===c.k;
+    const ar=on?`<span class="ar">${SORT.dir==='desc'?'▾':'▴'}</span>`:'';
+    return `<span class="fcol ${c.num?'num':''} ${on?'on':''}" onclick="setSort('${c.k}')">${c.label}${ar}</span>`;
+  }).join('');
+}
 
 /* ============ DOCUMENT BODY TEXT (multi-page real preview) ============ */
 const DOC_BODY = {
@@ -1887,12 +1964,13 @@ function matchesQuery(f){
   return (f.name+' '+f.short).toLowerCase().includes(q);
 }
 let SORT={key:'modified',dir:'desc'};
-const SORT_LABEL={name:'Name', modified:'Last modified', size:'Size'};
+const SORT_LABEL={name:'Name', modified:'Last modified', size:'Size', kind:'Kind'};
 function sortCmp(a,b){
   if(a.isFolder!==b.isFolder) return a.isFolder?-1:1;   // folders first
   let r=0;
   if(SORT.key==='name') r=(a.short||'').localeCompare(b.short||'');
   else if(SORT.key==='size') r=(a.bytes||0)-(b.bytes||0);
+  else if(SORT.key==='kind') r=kindLabel(a).localeCompare(kindLabel(b)) || (a.short||'').localeCompare(b.short||'');
   else r=(a.modifiedAt||0)-(b.modifiedAt||0);
   return SORT.dir==='desc' ? -r : r;
 }
@@ -1919,29 +1997,24 @@ function closeSortMenu(){ const m=document.getElementById('sortMenu'); if(m) m.r
 
 /* ============ file list (combined: thumb + type badge + attribution + checkbox + quick-acts + ctx) ============ */
 function rowHTML(f){
-  const fut   = isFuture(f);
-  const cover = f.id===state.coverId ? `<span class="cover-tag">${SPARK} COVER</span>` : '';
-  const by    = f.byAgent ? `${SPARK} ${f.by}` : f.by;
   const isChecked = state.checked.has(f.id);
-  return `<div class="frow ${state.selected===f.id?'active':''} ${fut?'future':''} ${isChecked?'checked':''}"
+  return `<div class="frow ${state.selected===f.id?'active':''} ${isChecked?'checked':''}"
        data-id="${f.id}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')"
-       onclick="rowClick(event,'${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')">
-    <span class="fcheck" onclick="toggleCheck(event,'${f.id}')" title="Select">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
-    </span>
-    ${renderThumb(f,'list')}
-    <div class="fmeta"><b>${f.short}</b><span>${by} · ${dstr(daysAgo(f.added))}</span></div>
-    <span class="ftype">${typeLabel(f)}</span>
-    ${cover}
-    <span class="star"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></span>
-    <span class="quick">
-      <button class="qbtn" title="Share" onclick="rowQuick(event,'share','${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="M8.3 10.9l7.4-4.3M8.3 13.1l7.4 4.3"/></svg></button>
-      <button class="qbtn" title="Download" onclick="rowQuick(event,'download','${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg></button>
-      <button class="qbtn" title="More" onclick="openRowCtx(event,'${f.id}')"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button>
-    </span>
+       onclick="rowClick(event,'${f.id}')" ondblclick="rowOpen('${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')">
+    <div class="fc-name">
+      <span class="fcheck" onclick="toggleCheck(event,'${f.id}')" title="Select">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+      </span>
+      ${finderIcon(f)}
+      <span class="nm">${escapeHTML(f.short)}</span>
+    </div>
+    <div class="fc-size">${f.isFolder?'—':escapeHTML(f.size||'—')}</div>
+    <div class="fc-kind">${escapeHTML(kindLabel(f))}</div>
+    <div class="fc-date">${escapeHTML(fileDateStr(f))}</div>
   </div>`;
 }
 function renderList(){
+  renderColsHeader();
   const visible = getVisibleFiles();
   const askRow = state.query ? `
     <div class="ask-row" onclick="askAgentsFromSearch()">
@@ -1953,7 +2026,7 @@ function renderList(){
   const rows = visible.map(rowHTML).join('');
   const emptyState = (state.query && visible.length===0)
     ? `<div class="search-empty">No documents match &ldquo;${escapeHTML(state.query)}&rdquo;.<br>Try the agents instead.</div>`
-    : '';
+    : (visible.length===0 ? '<div class="search-empty">This folder is empty.</div>' : '');
   fileList.innerHTML = askRow + rows + emptyState;
   const count = visible.length;
   document.getElementById('lpCount').textContent =
@@ -2056,14 +2129,22 @@ function renderPreview(id){
   refreshChatSuggestions();
   renderInfo();   // right panel → this document's activity
 }
-/* list-view selection: keep the browsable list on the left */
+/* list view = Finder table: a single click just highlights the row (no side preview) */
 function selectFile(id){
   if(state.view!=='list'){ openFocused(id); return; }   // opened from gallery/carousel → focus only
-  state.focused=false;
+  state.focused=false; state.selected=id;
   document.getElementById('listpane').classList.remove('collapsed');
-  renderPreview(id);
   renderList();
+  const f=FILES.find(x=>x.id===id);
+  liveComments=[];
+  if(f && f.live && !f.isFolder){ loadLiveComments(f); }   // populate the info panel's comments for the highlighted file
+  else if(state.infoOpen){ renderInfo(); }
   syncUrl();
+}
+/* double-click / Enter → open: files go full-width, folders navigate in */
+function rowOpen(id){
+  const f=FILES.find(x=>x.id===id); if(!f) return;
+  if(f.isFolder) openLiveFolder(f.id, f.name); else openFocused(id);
 }
 /* focus a single item full-width (no file list), e.g. opened from gallery/carousel */
 function openFocused(id){
@@ -2077,13 +2158,14 @@ function openFocused(id){
   syncUrl();
 }
 function clearSelection(){
-  if(state.focused){
+  if(state.focused){   // close the full-width preview, back to the view we came from
     state.focused=false;
     document.getElementById('listpane').classList.remove('collapsed');
     setView(state.returnView||'gallery');
     refreshChatSuggestions();
     return;
   }
+  if(state.view==='list'){ state.selected=null; renderList(); if(state.infoOpen) renderInfo(); syncUrl(); refreshChatSuggestions(); return; }
   setView('gallery');
   refreshChatSuggestions();
 }
@@ -2224,7 +2306,7 @@ function setView(v){
   if(full){
     state.selected=null;
     home.style.display=''; preview.style.display='none'; emptyHint.style.display='none';
-    lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
+    lp.classList.remove('finder'); lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
     gallery.classList.toggle('ghost', v!=='gallery');
     carousel.classList.toggle('ghost', v!=='carousel');
     columnsEl.classList.toggle('ghost', v!=='columns');
@@ -2232,14 +2314,15 @@ function setView(v){
     if(v==='gallery') renderGallery(); else if(v==='carousel') renderCarousel(); else renderColumnsFromCurrent();
     if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
   }else{
-    lp.classList.remove('gallery-mode'); fileList.classList.remove('ghost');
+    // list = full-width Finder table with sortable columns; no side preview
+    lp.classList.remove('gallery-mode'); lp.classList.add('finder'); fileList.classList.remove('ghost');
     gallery.classList.add('ghost'); carousel.classList.add('ghost'); columnsEl.classList.add('ghost');
-    stage.classList.remove('ghost','is-home');
-    renderList();
+    stage.classList.add('ghost','is-home');
     const vis=getVisibleFiles();
-    const firstFile=vis.find(f=>!f.isFolder);
-    const sel=(state.selected&&vis.some(f=>f.id===state.selected&&!f.isFolder))?state.selected:(firstFile&&firstFile.id);
-    if(sel) selectFile(sel); else { preview.style.display='none'; home.style.display='none'; emptyHint.style.display=''; }
+    if(!state.selected || !vis.some(f=>f.id===state.selected)) state.selected = vis[0] ? vis[0].id : null;
+    liveComments=[];
+    renderList();
+    if(state.infoOpen) renderInfo();
   }
   autoRail();
   applyRestore();
@@ -2299,11 +2382,11 @@ function setCoverFromPreview(){
 
 /* ============ multi-select / quick actions / context menu ============ */
 function rowClick(e, id){
-  if(e.target.closest('.fcheck') || e.target.closest('.quick')) return;
+  if(e.target.closest('.fcheck')) return;
+  if(e.metaKey || e.ctrlKey){ toggleCheck(e, id); return; }            // ⌘-click → toggle into multi-select
+  if(e.shiftKey && _lastCheckedId){ toggleCheck(e, id); return; }       // ⇧-click → range select
   if(state.checked.size>0){ toggleCheck(e, id); return; }
-  const f=FILES.find(x=>x.id===id);
-  if(f && f.isFolder){ openLiveFolder(f.id, f.name); return; }   // navigate into subfolders
-  selectFile(id);
+  selectFile(id);   // plain click just highlights; double-click / Enter opens
 }
 function toggleCheck(e, id){
   e.stopPropagation();
@@ -2372,7 +2455,7 @@ rowCtx.addEventListener('click', e=>{
   closeRowCtx();
   if(!f) return;
   switch(act){
-    case 'open':     selectFile(f.id); break;
+    case 'open':     rowOpen(f.id); break;
     case 'cover':    state.coverId=f.id; renderList(); renderGallery(); toast('Set as folder cover'); break;
     case 'rename':   toast(`Rename “${f.short}”`); break;
     case 'share':    toast(`Sharing “${f.short}”`); break;
@@ -3049,7 +3132,7 @@ function openPin(p){
   if(p.live){
     if(!FILES.find(x=>x.id===p.id)) FILES.push({id:p.id,short:p.short||p.label,name:p.name||p.label,type:p.type||'doc',ext:p.ext||'',by:p.by||'Me',added:p.added||0,size:p.size||'—',live:true,previewUrl:p.previewUrl,thumbnailLink:p.thumbnailLink,iconLink:p.iconLink,title:[p.name||p.label]});
     state.level='folder'; document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
-    setView('list'); selectFile(p.id);
+    setView('list'); openFocused(p.id);
   } else { enterFolder('Estate docs'); selectFile(p.key); }
 }
 function renderPins(){
@@ -3104,14 +3187,15 @@ document.addEventListener('keydown',e=>{
     return;
   }
   const visible=getVisibleFiles();
-  if((e.key==='ArrowDown'||e.key==='ArrowUp') && visible.length){
+  if((e.key==='ArrowDown'||e.key==='ArrowUp') && visible.length && !state.focused){
     e.preventDefault();
     let i=visible.findIndex(f=>f.id===state.selected);
     i = e.key==='ArrowDown' ? Math.min(visible.length-1,i+1) : Math.max(0,i-1);
     if(i<0)i=0;
-    selectFile(visible[i].id);
+    state.selected=visible[i].id; renderList(); if(state.infoOpen) renderInfo(); syncUrl();   // highlight only
     const row=document.querySelector('.frow.active'); row&&row.scrollIntoView({block:'nearest'});
   }
+  if(e.key==='Enter' && state.view==='list' && state.selected && !state.focused){ e.preventDefault(); rowOpen(state.selected); }
   if(e.key==='Escape'){
     if(rowCtx.classList.contains('open')){ closeRowCtx(); return; }
     if(state.checked.size>0){ clearChecks(); return; }
