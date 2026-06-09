@@ -3691,7 +3691,9 @@ function addPdfCommentAt(e,f,pageEl,pageNo){
   postComment(f, text, {page:pageNo, x:Math.round(x), y:Math.round(y)});
 }
 function liveDocUrl(f){
-  if(/vnd\.google-apps/.test(f.mimeRaw||'') || ['gdoc','sheet','slides'].indexOf(f.type)>=0)
+  const m=f.mimeRaw||'';
+  // export ONLY true Google-native editor docs; everything else (incl. app-owned PDFs) downloads its bytes
+  if(/^application\/vnd\.google-apps\.(document|spreadsheet|presentation|drawing)$/.test(m) || ['gdoc','sheet','slides'].indexOf(f.type)>=0)
     return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'/export?mimeType=application/pdf';
   return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media';
 }
@@ -3703,7 +3705,7 @@ function loadLivePdf(f){
     .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
     .then(pdf=>{ if(state.selected!==f.id) return; return renderPdf(pdf,f); })
     .then(()=>{ if(state.selected===f.id) loadLiveComments(f); })
-    .catch(()=>{ if(state.selected===f.id){ const b2=document.getElementById('pvLiveDoc'); if(b2) b2.innerHTML='<div class="pv-unsupported">'+previewCardHTML(f, "Preview isn't available — open it in Google.")+'</div>'; } });
+    .catch(e=>{ console.warn('PDF preview failed:', f.name, f.mimeRaw, e); if(state.selected===f.id){ const b2=document.getElementById('pvLiveDoc'); if(b2) b2.innerHTML='<div class="pv-unsupported">'+previewCardHTML(f, "Preview isn't available — open it in Google.")+'</div>'; } });
 }
 function renderPdf(pdf,f){
   if(state.selected!==f.id) return Promise.resolve();
