@@ -133,7 +133,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .crumbs{display:flex;align-items:center;gap:8px;min-width:0}
 .crumb{color:var(--faint);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
 .crumb:hover{color:var(--muted)}
-.crumb.here{font-family:"Fraunces",serif;color:var(--ink);font-size:21px;font-weight:600;letter-spacing:-.02em;cursor:default}
+.crumb.here{font-family:"Fraunces",serif;color:var(--ink);font-size:21px;font-weight:600;letter-spacing:-.02em;cursor:pointer}
+.crumb.here:hover{text-decoration:underline;text-underline-offset:3px}
 .crumb-sep{color:var(--faint);font-size:13px}
 
 .search{
@@ -1098,7 +1099,7 @@ svg{display:block}
       <div class="crumbs">
         <span class="crumb" id="crumbRoot" onclick="goMyDrive()">My Drive</span>
         <span class="crumb-sep" id="crumbSep">›</span>
-        <span class="crumb here" id="folderCrumb">Estate docs</span>
+        <span class="crumb here" id="folderCrumb" onclick="goCurFolder()">Estate docs</span>
       </div>
       <div class="search" id="search">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -2288,6 +2289,11 @@ function showConnectLanding(){
 }
 function goMyDrive(){
   if(state.live){ openLiveFolder('root','My Drive'); } else { showConnectLanding(); }
+}
+function goCurFolder(){   // click the current-folder crumb → open/re-root on that folder (pops back from deeper drill in columns)
+  const cf=state.curFolder;
+  if(!state.live || !cf || cf.id==='root'){ goMyDrive(); return; }
+  openLiveFolder(cf.id, cf.name, state.view);
 }
 function enterFolder(name){
   const f=FOLDERS.find(x=>x.name===name);
@@ -3542,10 +3548,17 @@ function colPathFor(id,name){   // build [root … folder] by walking parents
   return step(id).then(()=>{ if(chain[0].id!=='root') chain.unshift({id:'root',name:'My Drive'}); return chain; })
     .catch(()=>[{id:'root',name:'My Drive'},{id:id,name:name||'Folder'}]);
 }
+function syncColCrumb(){   // keep the top breadcrumb + scope chip on the deepest folder you've drilled into
+  const cf=state.curFolder;
+  const root=document.getElementById('crumbRoot'), sep=document.getElementById('crumbSep'), fc=document.getElementById('folderCrumb');
+  if(!cf || cf.id==='root'){ root.classList.add('here'); sep.style.display='none'; fc.style.display='none'; setScopeChip(null); }
+  else { root.classList.remove('here'); sep.style.display=''; fc.style.display=''; fc.textContent=cf.name; setScopeChip(cf.name); }
+}
 function renderColumns(){
   if(!state.live){ showConnectLanding(); return; }
   const cont=document.getElementById('columns'); if(!cont) return;
   if(!COL_PATH.length) COL_PATH=[{id:'root',name:'My Drive'}];
+  syncColCrumb();
   cont.innerHTML='';
   const proms=[];
   COL_PATH.forEach((node,li)=>{
