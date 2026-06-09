@@ -130,12 +130,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- main ---------- */
 .main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;background:var(--bg)}
 .toolbar{display:flex;align-items:center;gap:12px;padding:14px 22px;height:68px;flex:none;position:relative}
-.crumbs{display:flex;align-items:center;gap:8px;min-width:0}
-.crumb{color:var(--faint);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer}
+.crumbs{display:flex;align-items:center;gap:8px;min-width:0;max-width:48vw}
+.crumb{color:var(--faint);font-size:14px;font-weight:500;white-space:nowrap;cursor:pointer;overflow:hidden;text-overflow:ellipsis;max-width:170px;flex:0 1 auto}
 .crumb:hover{color:var(--muted)}
-.crumb.here{font-family:"Fraunces",serif;color:var(--ink);font-size:21px;font-weight:600;letter-spacing:-.02em;cursor:pointer}
+.crumb.here{font-family:"Fraunces",serif;color:var(--ink);font-size:21px;font-weight:600;letter-spacing:-.02em;cursor:pointer;max-width:340px}
 .crumb.here:hover{text-decoration:underline;text-underline-offset:3px}
-.crumb-sep{color:var(--faint);font-size:13px}
+.crumb-ell{cursor:default;letter-spacing:1px}
+.crumb-ell:hover{color:var(--muted)}
+.crumb-sep{color:var(--faint);font-size:13px;flex:none}
 
 .search{
   flex:1 1 auto;max-width:560px;margin:0 auto;min-width:0;
@@ -2337,8 +2339,7 @@ function showLiveList(title, items){
   state.level='folder'; state.curFolder=null; FILES.length=0;
   items.filter(d=>d.mimeType!=='application/vnd.google-apps.folder').forEach(d=>FILES.push(mapDriveFile(d)));
   state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query=''; state.userCover=null;
-  document.getElementById('crumbRoot').classList.remove('here');
-  document.getElementById('crumbSep').style.display=''; const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=title;
+  renderCrumbs([{id:'root',name:'My Drive'},{name:title}]);
   document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
   setScopeChip(null);
   setView('list');
@@ -2366,9 +2367,7 @@ function showConnectLanding(){
     <div class="landing-sub">Connect your Google account to browse your real files and folders — with per-folder agents, anchored comments, and a live preview.</div>
     <button class="aabtn primary landing-btn" onclick="connectDrive()">${driveLogoSvg(16)}&nbsp; Connect Google Drive</button>
   </div>`;
-  document.getElementById('crumbRoot').classList.add('here');
-  document.getElementById('crumbSep').style.display='none';
-  document.getElementById('folderCrumb').style.display='none';
+  renderCrumbs(null);
   setNavActive(null); setScopeChip(null);
 }
 function goMyDrive(){
@@ -2379,11 +2378,26 @@ function goCurFolder(){   // click the current-folder crumb → open/re-root on 
   if(!state.live || !cf || cf.id==='root'){ goMyDrive(); return; }
   openLiveFolder(cf.id, cf.name, state.view);
 }
+function goCrumb(id,name){ if(!id || id==='root'){ goMyDrive(); return; } openLiveFolder(id, name, state.view); }
+/* render the full clickable path: My Drive › … › parent › current (chain[0] is the root) */
+function renderCrumbs(chain){
+  const el=document.querySelector('.crumbs'); if(!el) return;
+  if(!chain || !chain.length){ el.innerHTML=`<span class="crumb here" onclick="goMyDrive()">My Drive</span>`; return; }
+  let segs=chain.slice();
+  if(segs.length>4) segs=[chain[0], {ell:true}, chain[chain.length-2], chain[chain.length-1]];   // collapse the middle
+  const full=chain.map(c=>c.name).join(' / ');
+  el.innerHTML=segs.map((seg,i)=>{
+    const sep=i>0?'<span class="crumb-sep">›</span>':'';
+    if(seg.ell) return sep+`<span class="crumb crumb-ell" title="${escapeHTML(full)}">…</span>`;
+    const last=seg===chain[chain.length-1];
+    const safe=escapeHTML(seg.name||'');
+    const click = !seg.id ? '' : (seg.id==='root' ? `onclick="goMyDrive()"` : `onclick="goCrumb('${seg.id}','${(seg.name||'').replace(/['\\]/g,'\\$&')}')"`);
+    return sep+`<span class="crumb${last?' here':''}" ${click} title="${safe}">${safe}</span>`;
+  }).join('');
+}
 function enterFolder(name){
   const f=FOLDERS.find(x=>x.name===name);
-  document.getElementById('crumbRoot').classList.remove('here');
-  document.getElementById('crumbSep').style.display='';
-  const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name;
+  renderCrumbs([{id:'root',name:'My Drive'},{name:name}]);
   setNavActive(name);
   if(f && f.populated){
     state.level='folder';
@@ -2610,7 +2624,6 @@ function restoreScope(){
   searchInput.placeholder='Ask or search…';
   state.scopeAll=false;
 }
-document.getElementById('folderCrumb').addEventListener('click',restoreScope);
 
 /* ============ Google cluster popovers ============ */
 const wafflePop = document.getElementById('wafflePop');
@@ -3555,9 +3568,7 @@ function renderMyDriveLive(){
   const sc=document.getElementById('screen'); sc.classList.remove('ghost');
   sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Your live Google Drive · ${LIVE_FOLDERS.length} folder${LIVE_FOLDERS.length===1?'':'s'}</div>
     <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.id}')" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${f.name}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
-  document.getElementById('crumbRoot').classList.add('here');
-  document.getElementById('crumbSep').style.display='none';
-  document.getElementById('folderCrumb').style.display='none';
+  renderCrumbs(null);
   setNavActive(null);
 }
 let folderCache={};   // session cache of mapped folder listings (stale-while-revalidate) — keeps revisits instant
@@ -3570,16 +3581,13 @@ function openLiveFolder(id,name,targetView){
   FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.userCover=null; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
   if(isRoot){
     state.level='mydrive';
-    document.getElementById('crumbRoot').classList.add('here');
-    document.getElementById('crumbSep').style.display='none';
-    document.getElementById('folderCrumb').style.display='none';
+    renderCrumbs(null);
     setNavActive(null); setScopeChip(null);
     document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav==='mydrive'));
   } else {
     state.level='folder';
-    document.getElementById('crumbRoot').classList.remove('here');
-    document.getElementById('crumbSep').style.display='';
-    const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
+    renderCrumbs([{id:'root',name:'My Drive'},{id:id,name:name||'Folder'}]);   // immediate: root › current
+    if(state.view!=='columns') colPathFor(id,name||'Folder').then(chain=>{ if(state.curFolder && state.curFolder.id===id) renderCrumbs(chain); }).catch(()=>{});   // upgrade to full path
     setNavActive(name); setScopeChip(name);
   }
   document.getElementById('screen').classList.add('ghost');
@@ -3633,11 +3641,10 @@ function colPathFor(id,name){   // build [root … folder] by walking parents
   return step(id).then(()=>{ if(chain[0].id!=='root') chain.unshift({id:'root',name:'My Drive'}); return chain; })
     .catch(()=>[{id:'root',name:'My Drive'},{id:id,name:name||'Folder'}]);
 }
-function syncColCrumb(){   // keep the top breadcrumb + scope chip on the deepest folder you've drilled into
+function syncColCrumb(){   // column view already has the full path in COL_PATH → show all of it
+  renderCrumbs(COL_PATH && COL_PATH.length ? COL_PATH : null);
   const cf=state.curFolder;
-  const root=document.getElementById('crumbRoot'), sep=document.getElementById('crumbSep'), fc=document.getElementById('folderCrumb');
-  if(!cf || cf.id==='root'){ root.classList.add('here'); sep.style.display='none'; fc.style.display='none'; setScopeChip(null); }
-  else { root.classList.remove('here'); sep.style.display=''; fc.style.display=''; fc.textContent=cf.name; setScopeChip(cf.name); }
+  setScopeChip(cf && cf.id!=='root' ? cf.name : null);
 }
 function renderColumns(){
   if(!state.live){ showConnectLanding(); return; }
