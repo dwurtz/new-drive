@@ -1589,6 +1589,9 @@ function kindLabel(f){
   if(m==='application/vnd.google-apps.spreadsheet') return 'Google Sheet';
   if(m==='application/vnd.google-apps.presentation') return 'Google Slides';
   if(m==='application/vnd.google-apps.form') return 'Google Form';
+  if(/vnd\.google-makersuite/.test(m)) return 'Google AI Studio prompt';
+  if(/vnd\.google\.colab/.test(m)) return 'Colab notebook';
+  if(m==='application/vnd.google-apps.shortcut') return 'Shortcut';
   if(m==='application/pdf') return 'PDF document';
   if(/^image\/jpe?g/.test(m)) return 'JPEG image';
   if(/^image\/png/.test(m)) return 'PNG image';
@@ -3318,13 +3321,20 @@ function mapDriveFile(d){
     iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
 }
 function cidOf(f){ return (f && f.contentId) || (f && f.id); }
-/* how to render a file in our own white viewer: 'image' | 'pdf' | null (use the MIME, falling back to extension) */
+/* how to render a file in our own white viewer: 'image' | 'pdf' | null */
 function previewMode(f){
   if(!f || f.isFolder) return null;
-  const m=f.mimeRaw||'', ext=(f.ext||'').toLowerCase();
-  if(f.type==='image' || /^image\//.test(m) || (/^(jpe?g|png|gif|webp|bmp|svg|heic)$/.test(ext) && !/vnd\.google-apps/.test(m))) return 'image';
-  if(m==='application/pdf' || ext==='pdf') return 'pdf';                       // real PDFs, even with a non-standard MIME (e.g. AI Studio exports)
-  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return 'pdf';  // Google-native → export to PDF
+  const m=(f.mimeRaw||'').toLowerCase(), ext=(f.ext||'').toLowerCase();
+  // proprietary Google app blobs are NOT real files we can render (AI Studio prompts, Colab, forms, sites, etc.)
+  if(/vnd\.google-makersuite|vnd\.google\.colab|vnd\.google-apps\.(shortcut|form|site|map|jam|script|drive-sdk|fusiontable)/.test(m)) return null;
+  if(/^application\/vnd\.google-apps\.(document|spreadsheet|presentation|drawing)$/.test(m)) return 'pdf';   // native editor → export to PDF
+  if(/^image\//.test(m)) return 'image';
+  if(m==='application/pdf') return 'pdf';
+  // extension fallback ONLY for generic/unknown MIME (never override a vnd.google-* type)
+  if(!/vnd\.google/.test(m)){
+    if(ext==='pdf') return 'pdf';
+    if(/^(jpe?g|png|gif|webp|bmp|svg|heic)$/.test(ext)) return 'image';
+  }
   return null;
 }
 function canPreview(f){ return previewMode(f)!==null; }
@@ -3695,7 +3705,7 @@ function liveDocUrl(f){
   // export ONLY true Google-native editor docs; everything else (incl. app-owned PDFs) downloads its bytes
   if(/^application\/vnd\.google-apps\.(document|spreadsheet|presentation|drawing)$/.test(m) || ['gdoc','sheet','slides'].indexOf(f.type)>=0)
     return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'/export?mimeType=application/pdf';
-  return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media';
+  return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media&acknowledgeAbuse=true';
 }
 function loadLivePdf(f){
   const box=document.getElementById('pvLiveDoc');
