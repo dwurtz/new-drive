@@ -300,6 +300,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .listpane.finder .frow.active .fc-ic img{filter:brightness(0) invert(1)}
 .listpane.finder .frow.active .fc-size,.listpane.finder .frow.active .fc-kind,.listpane.finder .frow.active .fc-date{color:rgba(255,255,255,.82)}
 .listpane.finder .frow.checked:not(.active){background:var(--sel)}
+.fc-name .nm-wrap{display:flex;flex-direction:column;min-width:0}
+.fc-sub{display:none}
+/* split mode: a file is selected → compact list on the left + preview on the right */
+.listpane.finder.with-preview{flex:0 0 clamp(320px,30%,440px);border-right:1px solid var(--line)}
+.listpane.finder.with-preview .fcols{display:none}
+.listpane.finder.with-preview .lp-head{display:flex}
+.listpane.finder.with-preview .lp-sort{display:inline-flex}
+.listpane.finder.with-preview .frow{grid-template-columns:1fr;padding:7px 12px}
+.listpane.finder.with-preview .fc-size,.listpane.finder.with-preview .fc-kind,.listpane.finder.with-preview .fc-date{display:none}
+.listpane.finder.with-preview .fc-sub{display:block;font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.listpane.finder.with-preview .frow.active .fc-sub{color:rgba(255,255,255,.8)}
 
 /* right-click context menu */
 .ctx-menu{
@@ -359,6 +370,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   padding:30px 24px;text-align:center;transform:rotate(-1.4deg);transition:.4s var(--ease);overflow:hidden;
 }
 .cover-hero:hover .cover-page{transform:rotate(0) translateY(-4px)}
+.cover-collage{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:8px;width:300px;align-self:start}
+.cc-cell{aspect-ratio:1;background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer;display:grid;place-items:center;transition:.15s var(--ease)}
+.cc-cell:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);border-color:var(--line-2)}
+.cc-cell img{width:100%;height:100%;object-fit:cover;display:block}
+.cc-cell img.cc-icon{object-fit:contain;padding:22%}
+.cc-cell .cc-fold,.cc-cell .cc-fic{color:var(--muted);display:grid;place-items:center}
+.cc-cell .cc-fold svg{width:42%;height:42%}
+.cc-cell .cc-fic svg{width:34px;height:34px}
 .cover-title{font-family:"Fraunces",serif;font-size:30px;font-weight:600;line-height:1.08;letter-spacing:-.02em;margin-bottom:14px}
 .cover-desc{color:var(--muted);font-size:14.5px;line-height:1.55;max-width:46ch}
 .cover-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
@@ -2027,7 +2046,7 @@ function rowHTML(f){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
       </span>
       ${finderIcon(f)}
-      <span class="nm">${escapeHTML(f.short)}</span>
+      <span class="nm-wrap"><span class="nm">${escapeHTML(f.short)}</span><span class="fc-sub">${escapeHTML(f.by||'')} · ${escapeHTML(fileDateStr(f))}</span></span>
     </div>
     <div class="fc-size">${f.isFolder?'—':escapeHTML(f.size||'—')}</div>
     <div class="fc-kind">${escapeHTML(kindLabel(f))}</div>
@@ -2057,32 +2076,71 @@ function renderList(){
   fileList.classList.toggle('has-selection', state.checked.size>0);
   syncSelectionBar();
 }
+/* list view: when a file is selected, split into a compact list + live preview; otherwise full-width table */
+function renderListView(){
+  const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
+  const f=state.selected && FILES.find(x=>x.id===state.selected);
+  const split = !!(f && !f.isFolder && !state.focused);
+  lp.classList.toggle('with-preview', split);
+  if(split){
+    stage.classList.remove('ghost','is-home');
+    renderList();
+    renderPreview(f.id);   // real preview into the stage, list stays on the left
+  } else {
+    stage.classList.add('ghost','is-home');
+    liveComments=[];
+    renderList();
+    if(state.infoOpen) renderInfo();
+  }
+}
 
 /* ============ gallery / cover ============ */
 const gallery = document.getElementById('gallery');
+function collageThumb(f){
+  if(f.isFolder) return `<div class="cc-fold">${folderIco()}</div>`;
+  const t=f.thumbnailLink?f.thumbnailLink.replace(/=s\d+.*$/,'=s400'):(f.iconLink||'');
+  if(t) return `<img src="${t}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${f.iconLink||''}';this.classList.add('cc-icon')">`;
+  return `<div class="cc-fic">${fileIco16()}</div>`;
+}
+function pickAssortment(items,n){   // a visual sampler: thumbnailed files first, then other files, then folders
+  const withThumb=items.filter(f=>!f.isFolder && f.thumbnailLink);
+  const otherFiles=items.filter(f=>!f.isFolder && !f.thumbnailLink);
+  const folders=items.filter(f=>f.isFolder);
+  return withThumb.concat(otherFiles, folders).slice(0,n);
+}
 function renderGallery(){
   const items = getVisibleFiles();
   if(!items.length){ gallery.innerHTML='<div style="margin:24px 2px;color:var(--faint);font-size:13px">'+(state.loadingFolder?'Loading…':'This folder is empty.')+'</div>'; return; }
-  const cover = items.find(f=>f.id===state.coverId) || items.find(f=>!f.isFolder) || items[0];
-  const others = items.filter(f=>f.id!==cover.id);
   const folders = items.filter(f=>f.isFolder).length, files = items.length-folders;
   const fname = (state.curFolder&&state.curFolder.name)||'My Drive';
+  const userCover = state.userCover ? items.find(f=>f.id===state.userCover) : null;
+  let heroLeft, heroTitle, heroClick;
+  if(userCover){   // a cover was elevated → showcase that single item
+    heroLeft = `<div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${renderThumb(userCover,'gallery')}</div></div>`;
+    heroTitle = escapeHTML(userCover.name);
+    heroClick = userCover.isFolder?`onclick="openLiveFolder('${cidOf(userCover)}','${escapeHTML(userCover.name)}')"`:`onclick="selectFile('${userCover.id}')"`;
+  } else {   // default → an assortment of the folder's contents
+    const picks = pickAssortment(items, 6);
+    heroLeft = `<div class="cover-collage">${picks.map(f=>`<div class="cc-cell" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">${collageThumb(f)}</div>`).join('')}</div>`;
+    heroTitle = escapeHTML(fname);
+    heroClick = '';
+  }
   gallery.innerHTML = `
-    <div class="cover-hero ${state.selected===cover.id?'active':''}" onclick="${cover.isFolder?`openLiveFolder('${cidOf(cover)}','${escapeHTML(cover.name)}')`:`selectFile('${cover.id}')`}" style="cursor:pointer">
-      <div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${renderThumb(cover,'gallery')}</div></div>
+    <div class="cover-hero" ${heroClick} style="${userCover?'cursor:pointer':''}">
+      ${heroLeft}
       <div>
-        <div class="cover-title">${escapeHTML(cover.name)}</div>
+        <div class="cover-title">${heroTitle}</div>
         <div class="cover-desc">${escapeHTML(fname)} — ${items.length} item${items.length===1?'':'s'}, kept in sync with your Google Drive.</div>
         <div class="cover-meta">
           <span class="chip"><b>${folders}</b> folder${folders===1?'':'s'}</span>
           <span class="chip"><b>${files}</b> file${files===1?'':'s'}</span>
-          <span class="chip">Updated <b>${dstr(daysAgo(cover.added||0))}</b></span>
+          ${userCover?'<span class="chip">'+SPARK+' Cover</span>':'<span class="chip">Updated <b>'+dstr(daysAgo((items.find(f=>!f.isFolder)||items[0]||{}).added||0))+'</b></span>'}
         </div>
       </div>
     </div>
     <h3 class="section-h" style="padding:0 2px">All items</h3>
     <div class="gal-grid">
-      ${others.map(f=>`
+      ${items.map(f=>`
         <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">
           <div class="gpage">${renderThumb(f,'gallery')}</div>
           <div class="gcard-foot"><b>${escapeHTML(f.short)}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
@@ -2159,11 +2217,7 @@ function selectFile(id){
   if(state.view!=='list'){ openFocused(id); return; }   // opened from gallery/carousel → focus only
   state.focused=false; state.selected=id;
   document.getElementById('listpane').classList.remove('collapsed');
-  renderList();
-  const f=FILES.find(x=>x.id===id);
-  liveComments=[];
-  if(f && f.live && !f.isFolder){ loadLiveComments(f); }   // populate the info panel's comments for the highlighted file
-  else if(state.infoOpen){ renderInfo(); }
+  renderListView();   // split into list + live preview (handles comments via renderPreview)
   syncUrl();
 }
 /* double-click / Enter → open: files go full-width, folders navigate in */
@@ -2190,7 +2244,7 @@ function clearSelection(){
     refreshChatSuggestions();
     return;
   }
-  if(state.view==='list'){ state.selected=null; renderList(); if(state.infoOpen) renderInfo(); syncUrl(); refreshChatSuggestions(); return; }
+  if(state.view==='list'){ state.selected=null; renderListView(); syncUrl(); refreshChatSuggestions(); return; }
   setView('gallery');
   refreshChatSuggestions();
 }
@@ -2252,7 +2306,7 @@ function navView(kind){
 function showLiveList(title, items){
   state.level='folder'; state.curFolder=null; FILES.length=0;
   items.filter(d=>d.mimeType!=='application/vnd.google-apps.folder').forEach(d=>FILES.push(mapDriveFile(d)));
-  state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query='';
+  state.coverId=FILES[0]&&FILES[0].id; state.selected=null; state.query=''; state.userCover=null;
   document.getElementById('crumbRoot').classList.remove('here');
   document.getElementById('crumbSep').style.display=''; const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=title;
   document.getElementById('screen').classList.add('ghost'); document.querySelector('.stage-wrap').classList.remove('ghost');
@@ -2336,7 +2390,7 @@ function setView(v){
   if(full){
     state.selected=null;
     home.style.display=''; preview.style.display='none'; emptyHint.style.display='none';
-    lp.classList.remove('finder'); lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
+    lp.classList.remove('finder','with-preview'); lp.classList.add('gallery-mode'); fileList.classList.add('ghost');
     gallery.classList.toggle('ghost', v!=='gallery');
     carousel.classList.toggle('ghost', v!=='carousel');
     columnsEl.classList.toggle('ghost', v!=='columns');
@@ -2344,15 +2398,13 @@ function setView(v){
     if(v==='gallery') renderGallery(); else if(v==='carousel') renderCarousel(); else renderColumnsFromCurrent();
     if(v==='carousel'){ closeInfo(); closeAgent(); }   // immersive: hide right panel
   }else{
-    // list = full-width Finder table with sortable columns; no side preview
+    // list = Finder table; selecting a file splits into compact list + live preview
     lp.classList.remove('gallery-mode'); lp.classList.add('finder'); fileList.classList.remove('ghost');
     gallery.classList.add('ghost'); carousel.classList.add('ghost'); columnsEl.classList.add('ghost');
-    stage.classList.add('ghost','is-home');
     const vis=getVisibleFiles();
-    if(!state.selected || !vis.some(f=>f.id===state.selected)) state.selected = vis[0] ? vis[0].id : null;
+    if(state.selected && !vis.some(f=>f.id===state.selected)) state.selected=null;   // drop stale selection
     liveComments=[];
-    renderList();
-    if(state.infoOpen) renderInfo();
+    renderListView();   // selected file → split with preview; otherwise the full sortable table
   }
   autoRail();
   applyRestore();
@@ -2411,8 +2463,8 @@ function openFromCarousel(i){ const vis=getVisibleFiles(); openFocused(vis[i].id
 /* ============ cover ============ */
 function setCoverFromPreview(){
   if(!state.selected)return;
-  state.coverId=state.selected;
-  renderList(); renderGallery(); toast('Set as folder cover');
+  state.coverId=state.selected; state.userCover=state.selected;
+  renderGallery(); toast('Set as folder cover');
 }
 
 /* ============ multi-select / quick actions / context menu ============ */
@@ -2491,7 +2543,7 @@ rowCtx.addEventListener('click', e=>{
   if(!f) return;
   switch(act){
     case 'open':     rowOpen(f.id); break;
-    case 'cover':    state.coverId=f.id; renderList(); renderGallery(); toast('Set as folder cover'); break;
+    case 'cover':    state.coverId=f.id; state.userCover=f.id; renderGallery(); toast('Set as folder cover'); break;
     case 'rename':   toast(`Rename “${f.short}”`); break;
     case 'share':    toast(`Sharing “${f.short}”`); break;
     case 'move':     toast(`Move “${f.short}”`); break;
@@ -3239,7 +3291,7 @@ document.addEventListener('keydown',e=>{
       let i=visible.findIndex(f=>f.id===state.selected);
       i = e.key==='ArrowDown' ? Math.min(visible.length-1,i+1) : Math.max(0,i-1);
       if(i<0)i=0;
-      state.selected=visible[i].id; renderList(); if(state.infoOpen) renderInfo(); syncUrl();   // highlight only
+      state.selected=visible[i].id; renderListView(); syncUrl();   // move selection + update the preview
       const row=document.querySelector('.frow.active'); row&&row.scrollIntoView({block:'nearest'});
     }
   }
@@ -3482,7 +3534,7 @@ function openLiveFolder(id,name,targetView){
   state.navKind=null;
   state.curFolder = {id:(isRoot?'root':id), name:(isRoot?'My Drive':(name||'Folder'))};
   // ---- immediate feedback (before the network call) ----
-  FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
+  FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.userCover=null; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
   if(isRoot){
     state.level='mydrive';
     document.getElementById('crumbRoot').classList.add('here');
