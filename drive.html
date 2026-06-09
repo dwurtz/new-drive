@@ -2098,7 +2098,7 @@ function renderPreview(id){
     liveComments=[];
     if(!canPreview(f)){
       canvas.innerHTML = `<div class="pv-unsupported">${previewCardHTML(f, "We can't preview this type here.")}</div>`;
-    } else if(f.type==='image'){
+    } else if(previewMode(f)==='image'){
       canvas.innerHTML = `<div class="pv-live-img" id="pvLiveImg"><div class="pv-img-loading">Loading…</div></div>`;
       loadLiveImage(f);
     } else {
@@ -3318,16 +3318,16 @@ function mapDriveFile(d){
     iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
 }
 function cidOf(f){ return (f && f.contentId) || (f && f.id); }
-/* a file is renderable in our own white viewer only if it's an image, a PDF, or a Google Doc/Sheet/Slides */
-function canPreview(f){
-  if(!f || f.isFolder) return false;
-  if(f.type==='image') return true;
-  const m=f.mimeRaw||'';
-  if(m==='application/pdf') return true;
-  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return true;
-  if(!m && /^pdf$/i.test(f.ext||'')) return true;
-  return false;
+/* how to render a file in our own white viewer: 'image' | 'pdf' | null (use the MIME, falling back to extension) */
+function previewMode(f){
+  if(!f || f.isFolder) return null;
+  const m=f.mimeRaw||'', ext=(f.ext||'').toLowerCase();
+  if(f.type==='image' || /^image\//.test(m) || (/^(jpe?g|png|gif|webp|bmp|svg|heic)$/.test(ext) && !/vnd\.google-apps/.test(m))) return 'image';
+  if(m==='application/pdf' || ext==='pdf') return 'pdf';                       // real PDFs, even with a non-standard MIME (e.g. AI Studio exports)
+  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return 'pdf';  // Google-native → export to PDF
+  return null;
 }
+function canPreview(f){ return previewMode(f)!==null; }
 /* graceful card for things we can't render inline (shortcuts, AI Studio, video, office files, …) */
 function previewCardHTML(f, note){
   const icon = f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16();
@@ -3534,7 +3534,7 @@ function renderColumns(){
 function renderColPreview(f, box){
   if(!box) return;
   if(!canPreview(f)){ box.innerHTML=previewCardHTML(f, "We can't preview this type here."); return; }
-  if(f.type==='image'){
+  if(previewMode(f)==='image'){
     box.innerHTML='<div class="cp-load">Loading…</div>';
     fetch('https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media',{headers:authHeaders()})
       .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
