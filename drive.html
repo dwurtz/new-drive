@@ -3510,12 +3510,11 @@ function renderColumnsFromCurrent(){
   } else { COL_PATH=[{id:'root',name:'My Drive'}]; colSelectedFile=null; colFileObj=null; renderColumns(); }
 }
 /* ---- columns view (Finder Miller columns) ---- */
-let COL_PATH=[], colCache={}, colSelectedFile=null, colFileObj=null;
+let COL_PATH=[], colSelectedFile=null, colFileObj=null;   // column listings share folderCache
 function colChildren(id){
   if(folderCache[id]) return Promise.resolve(folderCache[id]);
-  if(colCache[id]) return Promise.resolve(colCache[id]);
   return driveListAll("'"+id+"' in parents and trashed=false","folder,name")
-    .then(files=>{ const items=files.map(mapDriveFile); colCache[id]=items; folderCache[id]=items; return items; });
+    .then(files=>{ const items=files.map(mapDriveFile); folderCache[id]=items; return items; });
 }
 function colPathFor(id,name){   // build [root … folder] by walking parents
   const chain=[{id:id,name:name||'Folder'}];
@@ -3596,7 +3595,7 @@ function renderColPreview(f, box){
     .catch(()=>{ if(colSelectedFile===f.id) box.innerHTML=previewCardHTML(f, "Preview isn't available — open it in Google."); });
 }
 function colClick(level,id){
-  const items=colCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
+  const items=folderCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
   COL_PATH=COL_PATH.slice(0,level+1);
   if(f.isFolder){ const fid=cidOf(f); COL_PATH.push({id:fid,name:f.name}); colSelectedFile=null; colFileObj=null; state.curFolder={id:fid,name:f.name}; setScopeChip(f.name); }
   else { colSelectedFile=f.id; colFileObj=f; }
@@ -3609,15 +3608,15 @@ function colActiveContext(){
   // the column that currently holds the selection: {level, folderId, index}
   if(colSelectedFile){
     const folder=COL_PATH[COL_PATH.length-1];
-    const items=colCache[folder.id]||[];
+    const items=folderCache[folder.id]||[];
     return {level:COL_PATH.length-1, folderId:folder.id, items, index:items.findIndex(x=>x.id===colSelectedFile)};
   }
   if(COL_PATH.length>=2){
     const parent=COL_PATH[COL_PATH.length-2], cur=COL_PATH[COL_PATH.length-1];
-    const items=colCache[parent.id]||[];
+    const items=folderCache[parent.id]||[];
     return {level:COL_PATH.length-2, folderId:parent.id, items, index:items.findIndex(x=>x.id===cur.id)};
   }
-  const items=colCache[COL_PATH[0].id]||[];
+  const items=folderCache[COL_PATH[0].id]||[];
   return {level:0, folderId:COL_PATH[0].id, items, index:-1};
 }
 function colSelectAt(level, item){
