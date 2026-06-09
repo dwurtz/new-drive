@@ -543,6 +543,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .pv-img-wrap{position:relative;display:inline-block;max-width:100%;max-height:100%;line-height:0}
 .pv-img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:var(--shadow-lg);border-radius:4px;display:block}
 .pv-img-loading{color:var(--faint);font-size:13px}
+.pv-unsupported{display:grid;place-items:center;width:100%;min-height:60vh;padding:32px}
 .pv-live-doc{position:absolute;inset:0;overflow:auto;background:#fff;padding:28px;display:flex;flex-direction:column;align-items:center;gap:20px}
 .pv-pdf-pagewrap{position:relative;cursor:crosshair;line-height:0;box-shadow:var(--shadow-lg);border-radius:4px;max-width:100%}
 .pv-pdf-page{display:block;width:100%;border-radius:4px;background:#fff}
@@ -1012,7 +1013,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .cp-icon img{width:72px;height:72px}
 .cp-name{font-weight:600;font-size:14.5px;word-break:break-word;line-height:1.35}
 .cp-meta{font-size:12px;color:var(--faint);line-height:1.7}
-.cp-open{margin-top:4px}
+.cp-open{margin-top:4px;text-decoration:none}
 /* gallery keyboard selection */
 .gcard.active{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px}
 .cover-hero.active{outline:2px solid var(--accent);outline-offset:3px;border-radius:14px}
@@ -2055,7 +2056,7 @@ function renderGallery(){
   const folders = items.filter(f=>f.isFolder).length, files = items.length-folders;
   const fname = (state.curFolder&&state.curFolder.name)||'My Drive';
   gallery.innerHTML = `
-    <div class="cover-hero ${state.selected===cover.id?'active':''}" onclick="${cover.isFolder?`openLiveFolder('${cover.id}','${escapeHTML(cover.name)}')`:`selectFile('${cover.id}')`}" style="cursor:pointer">
+    <div class="cover-hero ${state.selected===cover.id?'active':''}" onclick="${cover.isFolder?`openLiveFolder('${cidOf(cover)}','${escapeHTML(cover.name)}')`:`selectFile('${cover.id}')`}" style="cursor:pointer">
       <div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${renderThumb(cover,'gallery')}</div></div>
       <div>
         <div class="cover-title">${escapeHTML(cover.name)}</div>
@@ -2070,7 +2071,7 @@ function renderGallery(){
     <h3 class="section-h" style="padding:0 2px">All items</h3>
     <div class="gal-grid">
       ${others.map(f=>`
-        <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${f.id}',this.dataset.n)`:`selectFile('${f.id}')`}">
+        <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'file','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">
           <div class="gpage">${renderThumb(f,'gallery')}</div>
           <div class="gcard-foot"><b>${escapeHTML(f.short)}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
         </div>`).join('')}
@@ -2095,7 +2096,9 @@ function renderPreview(id){
   const custom = previewContentFor(f);
   if(f.live){
     liveComments=[];
-    if(f.type==='image'){
+    if(!canPreview(f)){
+      canvas.innerHTML = `<div class="pv-unsupported">${previewCardHTML(f, "We can't preview this type here.")}</div>`;
+    } else if(f.type==='image'){
       canvas.innerHTML = `<div class="pv-live-img" id="pvLiveImg"><div class="pv-img-loading">Loading…</div></div>`;
       loadLiveImage(f);
     } else {
@@ -2154,7 +2157,7 @@ function selectFile(id){
 /* double-click / Enter → open: files go full-width, folders navigate in */
 function rowOpen(id){
   const f=FILES.find(x=>x.id===id); if(!f) return;
-  if(f.isFolder) openLiveFolder(f.id, f.name); else openFocused(id);
+  if(f.isFolder) openLiveFolder(cidOf(f), f.name); else openFocused(id);
 }
 /* focus a single item full-width (no file list), e.g. opened from gallery/carousel */
 function openFocused(id){
@@ -3298,16 +3301,41 @@ function mimeKind(m){
   return 'doc';
 }
 function mapDriveFile(d){
+  const isShortcut = d.mimeType==='application/vnd.google-apps.shortcut';
+  const sc = d.shortcutDetails || null;
+  const effMime = (isShortcut && sc && sc.targetMimeType) ? sc.targetMimeType : d.mimeType;   // resolve shortcuts to their target
+  const contentId = (isShortcut && sc && sc.targetId) ? sc.targetId : d.id;
   const mt=new Date(d.modifiedTime||0).getTime();
   const days=Math.max(0,Math.round((Date.now()-(mt||Date.now()))/864e5));
-  const isFolder=d.mimeType==='application/vnd.google-apps.folder';
-  return { id:d.id, name:d.name, short:d.name, type:isFolder?'folder':mimeKind(d.mimeType),
-    ext:isFolder?'':(d.fileExtension||({gdoc:'doc',sheet:'sheet',image:'img'}[mimeKind(d.mimeType)]||'pdf')).toUpperCase().slice(0,5),
+  const isFolder = effMime==='application/vnd.google-apps.folder';
+  return { id:d.id, contentId:contentId, name:d.name, short:d.name, type:isFolder?'folder':mimeKind(effMime),
+    ext:isFolder?'':(d.fileExtension||({gdoc:'doc',sheet:'sheet',image:'img'}[mimeKind(effMime)]||'pdf')).toUpperCase().slice(0,5),
     by:(d.owners&&d.owners[0]&&d.owners[0].displayName)||'Me', byAgent:false, added:days,
     modifiedAt:mt, bytes:+(d.size||0),
-    size:d.size?(Math.round(d.size/1024)+' KB'):'—', live:true, mimeRaw:d.mimeType, isFolder:isFolder,
-    previewUrl:'https://drive.google.com/file/d/'+d.id+'/preview',
+    size:d.size?fmtBytes(d.size):'—', live:true, mimeRaw:effMime, isFolder:isFolder, isShortcut:isShortcut,
+    previewUrl:'https://drive.google.com/file/d/'+contentId+'/preview',
+    webViewLink:d.webViewLink||('https://drive.google.com/open?id='+contentId),
     iconLink:(d.iconLink||'').replace(/\/16\//,'/64/'), thumbnailLink:d.thumbnailLink, title:[d.name] };
+}
+function cidOf(f){ return (f && f.contentId) || (f && f.id); }
+/* a file is renderable in our own white viewer only if it's an image, a PDF, or a Google Doc/Sheet/Slides */
+function canPreview(f){
+  if(!f || f.isFolder) return false;
+  if(f.type==='image') return true;
+  const m=f.mimeRaw||'';
+  if(m==='application/pdf') return true;
+  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return true;
+  if(!m && /^pdf$/i.test(f.ext||'')) return true;
+  return false;
+}
+/* graceful card for things we can't render inline (shortcuts, AI Studio, video, office files, …) */
+function previewCardHTML(f, note){
+  const icon = f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16();
+  const link = f.webViewLink || ('https://drive.google.com/open?id='+cidOf(f));
+  return `<div class="cp"><div class="cp-icon">${icon}</div>
+    <div class="cp-name">${escapeHTML(f.name||f.short||'')}</div>
+    <div class="cp-meta">${escapeHTML(kindLabel(f))}${(f.size&&f.size!=='—')?(' · '+f.size):''}${note?('<br>'+escapeHTML(note)):''}</div>
+    <a class="aabtn primary cp-open" href="${link}" target="_blank" rel="noopener">Open in Google ↗</a></div>`;
 }
 /* ---- deep-linking: reflect the current location in the URL hash so refresh restores it ---- */
 function syncUrl(){
@@ -3336,8 +3364,18 @@ function navFromUrl(){                            // read the hash and navigate 
   if(nav && NAVQ[nav]){ navView(nav); return; }
   if(f && f!=='root'){
     const known=(LIVE_FOLDERS||[]).find(x=>x.id===f);
-    if(known){ openLiveFolder(f, known.name, v||'list'); }
-    else driveApi('files/'+f+'?fields=name').then(m=>openLiveFolder(f, m.name||'Folder', v||'list')).catch(()=>openLiveFolder('root','My Drive', v||'list'));
+    if(known){ openLiveFolder(f, known.name, v||'list'); return; }
+    driveApi('files/'+f+'?fields=id,name,mimeType,parents,shortcutDetails(targetId,targetMimeType)').then(m=>{
+      const isSc=m.mimeType==='application/vnd.google-apps.shortcut', sc=m.shortcutDetails;
+      const eff=(isSc&&sc&&sc.targetMimeType)?sc.targetMimeType:m.mimeType;
+      const cid=(isSc&&sc&&sc.targetId)?sc.targetId:m.id;
+      if(eff==='application/vnd.google-apps.folder'){ openLiveFolder(cid, m.name||'Folder', v||'list'); return; }
+      // f is actually a FILE → open its parent folder and focus the file
+      const parent=(m.parents&&m.parents[0])||'root';
+      state._restore={focus:m.id, sel:null};
+      if(parent==='root'){ openLiveFolder('root','My Drive', v||'list'); return; }
+      driveApi('files/'+parent+'?fields=name').then(pm=>openLiveFolder(parent, pm.name||'Folder', v||'list')).catch(()=>openLiveFolder('root','My Drive', v||'list'));
+    }).catch(()=>openLiveFolder('root','My Drive', v||'list'));
     return;
   }
   openLiveFolder('root','My Drive', v||'list');
@@ -3345,7 +3383,7 @@ function navFromUrl(){                            // read the hash and navigate 
 /* ---- list ALL items in a query (pages through every result so counts are never capped) ---- */
 function driveListAll(q, order){
   const base="files?q="+encodeURIComponent(q)
-    +"&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,owners(displayName,me),lastModifyingUser(displayName,me))"
+    +"&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,iconLink,thumbnailLink,fileExtension,webViewLink,shortcutDetails(targetId,targetMimeType),owners(displayName,me),lastModifyingUser(displayName,me))"
     +"&pageSize=1000&corpora=user"+(order?("&orderBy="+encodeURIComponent(order)):"");
   const out=[];
   function page(tok){
@@ -3493,61 +3531,45 @@ function renderColumns(){
   cont.scrollLeft=cont.scrollWidth;
 }
 /* render the actual file content inside the column preview pane */
-function colPreviewable(f){
-  if(f.isFolder) return false;
-  if(f.type==='image') return true;
-  const m=f.mimeRaw||'';
-  if(m==='application/pdf') return true;
-  if(/vnd\.google-apps\.(document|spreadsheet|presentation)/.test(m)) return true;
-  if(!m && /^pdf$/i.test(f.ext||'')) return true;   // pin/stub without a stored mime
-  return false;
-}
 function renderColPreview(f, box){
   if(!box) return;
+  if(!canPreview(f)){ box.innerHTML=previewCardHTML(f, "We can't preview this type here."); return; }
   if(f.type==='image'){
     box.innerHTML='<div class="cp-load">Loading…</div>';
-    fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media',{headers:authHeaders()})
+    fetch('https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media',{headers:authHeaders()})
       .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
       .then(b=>{ if(colSelectedFile!==f.id) return; box.innerHTML=`<img class="cp-live-img" src="${URL.createObjectURL(b)}" referrerpolicy="no-referrer">`; })
-      .catch(e=>{ if(colSelectedFile===f.id) box.innerHTML='<div class="cp-load">Could not load image ('+e.message+')</div>'; });
+      .catch(()=>{ if(colSelectedFile===f.id) box.innerHTML=previewCardHTML(f, "Couldn't load the image — open it in Google."); });
     return;
   }
-  if(colPreviewable(f)){
-    box.innerHTML='<div class="cp-load">Loading…</div>';
-    if(!window.pdfjsLib){ box.innerHTML=`<iframe class="cp-live-frame" src="${f.previewUrl}" referrerpolicy="no-referrer"></iframe>`; return; }
-    fetch(liveDocUrl(f),{headers:authHeaders()})
-      .then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-      .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
-      .then(pdf=>{
-        if(colSelectedFile!==f.id) return;
-        box.innerHTML='';
-        const targetW=Math.min(760,(box.clientWidth||600)-40);
-        const seq=[];
-        for(let i=1;i<=pdf.numPages;i++){
-          seq.push(pdf.getPage(i).then(page=>{
-            if(colSelectedFile!==f.id) return;
-            const base=page.getViewport({scale:1}), scale=targetW/base.width, vp=page.getViewport({scale:scale*2});
-            const wrap=document.createElement('div'); wrap.className='pv-pdf-pagewrap'; wrap.style.width=(vp.width/2)+'px';
-            const c=document.createElement('canvas'); c.className='pv-pdf-page'; c.width=vp.width; c.height=vp.height; c.style.width='100%';
-            wrap.appendChild(c); box.appendChild(wrap);
-            return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
-          }));
-        }
-        return Promise.all(seq);
-      })
-      .catch(e=>{ if(colSelectedFile===f.id) box.innerHTML='<div class="cp-load">Could not render document ('+e.message+')</div>'; });
-    return;
-  }
-  // not previewable in-browser → icon + Open
-  const thumb = f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16();
-  box.innerHTML=`<div class="cp"><div class="cp-icon">${thumb}</div><div class="cp-name">${escapeHTML(f.name)}</div>
-    <div class="cp-meta">${escapeHTML(kindLabel(f))} · ${f.size||'—'}</div>
-    <button class="aabtn primary cp-open" onclick="openColFile()">Open ↗</button></div>`;
+  box.innerHTML='<div class="cp-load">Loading…</div>';
+  if(!window.pdfjsLib){ box.innerHTML=`<iframe class="cp-live-frame" src="${f.previewUrl}" referrerpolicy="no-referrer"></iframe>`; return; }
+  fetch(liveDocUrl(f),{headers:authHeaders()})
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
+    .then(pdf=>{
+      if(colSelectedFile!==f.id) return;
+      box.innerHTML='';
+      const targetW=Math.min(760,(box.clientWidth||600)-40);
+      const seq=[];
+      for(let i=1;i<=pdf.numPages;i++){
+        seq.push(pdf.getPage(i).then(page=>{
+          if(colSelectedFile!==f.id) return;
+          const base=page.getViewport({scale:1}), scale=targetW/base.width, vp=page.getViewport({scale:scale*2});
+          const wrap=document.createElement('div'); wrap.className='pv-pdf-pagewrap'; wrap.style.width=(vp.width/2)+'px';
+          const c=document.createElement('canvas'); c.className='pv-pdf-page'; c.width=vp.width; c.height=vp.height; c.style.width='100%';
+          wrap.appendChild(c); box.appendChild(wrap);
+          return page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+        }));
+      }
+      return Promise.all(seq);
+    })
+    .catch(()=>{ if(colSelectedFile===f.id) box.innerHTML=previewCardHTML(f, "Preview isn't available — open it in Google."); });
 }
 function colClick(level,id){
   const items=colCache[COL_PATH[level].id]||[]; const f=items.find(x=>x.id===id); if(!f) return;
   COL_PATH=COL_PATH.slice(0,level+1);
-  if(f.isFolder){ COL_PATH.push({id:f.id,name:f.name}); colSelectedFile=null; colFileObj=null; state.curFolder={id:f.id,name:f.name}; setScopeChip(f.name); }
+  if(f.isFolder){ const fid=cidOf(f); COL_PATH.push({id:fid,name:f.name}); colSelectedFile=null; colFileObj=null; state.curFolder={id:fid,name:f.name}; setScopeChip(f.name); }
   else { colSelectedFile=f.id; colFileObj=f; }
   renderColumns();
   syncUrl();
@@ -3620,13 +3642,13 @@ function galleryArrow(key){
 /* ---- live image (white viewer) + real Drive comments ---- */
 let liveComments=[], liveCommentFile=null;
 function loadLiveImage(f){
-  fetch('https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media',{headers:{Authorization:'Bearer '+driveToken}})
+  fetch('https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media',{headers:{Authorization:'Bearer '+driveToken}})
     .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
     .then(b=>{ if(state.selected!==f.id) return; const url=URL.createObjectURL(b); const box=document.getElementById('pvLiveImg'); if(!box)return;
       box.innerHTML=`<div class="pv-img-wrap" id="pvImgWrap"><img class="pv-img" id="pvImg" src="${url}" alt="${(f.short||'').replace(/"/g,'&quot;')}"></div>`;
       box.onclick=(e)=>addCommentAt(e,f);
       loadLiveComments(f);
-    }).catch(e=>{ const box=document.getElementById('pvLiveImg'); if(box) box.innerHTML='<div class="pv-img-loading">Could not load image ('+e.message+')</div>'; });
+    }).catch(()=>{ const box=document.getElementById('pvLiveImg'); if(box) box.innerHTML='<div class="pv-unsupported">'+previewCardHTML(f, "Couldn't load the image — open it in Google.")+'</div>'; });
 }
 function loadLiveComments(f){
   liveComments=[]; liveCommentFile=f;
@@ -3670,8 +3692,8 @@ function addPdfCommentAt(e,f,pageEl,pageNo){
 }
 function liveDocUrl(f){
   if(/vnd\.google-apps/.test(f.mimeRaw||'') || ['gdoc','sheet','slides'].indexOf(f.type)>=0)
-    return 'https://www.googleapis.com/drive/v3/files/'+f.id+'/export?mimeType=application/pdf';
-  return 'https://www.googleapis.com/drive/v3/files/'+f.id+'?alt=media';
+    return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'/export?mimeType=application/pdf';
+  return 'https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media';
 }
 function loadLivePdf(f){
   const box=document.getElementById('pvLiveDoc');
@@ -3681,7 +3703,7 @@ function loadLivePdf(f){
     .then(buf=>pdfjsLib.getDocument({data:buf}).promise)
     .then(pdf=>{ if(state.selected!==f.id) return; return renderPdf(pdf,f); })
     .then(()=>{ if(state.selected===f.id) loadLiveComments(f); })
-    .catch(e=>{ if(state.selected===f.id){ const b2=document.getElementById('pvLiveDoc'); if(b2) b2.innerHTML='<div class="pv-img-loading">Could not render document ('+e.message+')</div>'; } });
+    .catch(()=>{ if(state.selected===f.id){ const b2=document.getElementById('pvLiveDoc'); if(b2) b2.innerHTML='<div class="pv-unsupported">'+previewCardHTML(f, "Preview isn't available — open it in Google.")+'</div>'; } });
 }
 function renderPdf(pdf,f){
   if(state.selected!==f.id) return Promise.resolve();
