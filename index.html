@@ -2038,7 +2038,9 @@ function renderList(){
       <span class="ask-go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
     </div>` : '';
   const rows = visible.map(rowHTML).join('');
-  const emptyState = (state.query && visible.length===0)
+  const emptyState = (state.loadingFolder && visible.length===0)
+    ? '<div class="search-empty">Loading…</div>'
+    : (state.query && visible.length===0)
     ? `<div class="search-empty">No documents match &ldquo;${escapeHTML(state.query)}&rdquo;.<br>Try the agents instead.</div>`
     : (visible.length===0 ? '<div class="search-empty">This folder is empty.</div>' : '');
   fileList.innerHTML = askRow + rows + emptyState;
@@ -2053,7 +2055,7 @@ function renderList(){
 const gallery = document.getElementById('gallery');
 function renderGallery(){
   const items = getVisibleFiles();
-  if(!items.length){ gallery.innerHTML='<div style="margin:24px 2px;color:var(--faint);font-size:13px">This folder is empty.</div>'; return; }
+  if(!items.length){ gallery.innerHTML='<div style="margin:24px 2px;color:var(--faint);font-size:13px">'+(state.loadingFolder?'Loading…':'This folder is empty.')+'</div>'; return; }
   const cover = items.find(f=>f.id===state.coverId) || items.find(f=>!f.isFolder) || items[0];
   const others = items.filter(f=>f.id!==cover.id);
   const folders = items.filter(f=>f.isFolder).length, files = items.length-folders;
@@ -3363,6 +3365,7 @@ function syncUrl(){
   if(location.hash!==h) history.replaceState(null,'',location.pathname+location.search+h);
 }
 function applyRestore(){                          // one-shot: re-select/-focus the file named in the URL after a folder loads
+  if(state.loadingFolder) return;                // wait until the real files have arrived
   const r=state._restore; if(!r){ return; } state._restore=null;
   if(r.focus && FILES.find(x=>x.id===r.focus)){ openFocused(r.focus); }
   else if(r.sel && state.view==='list' && FILES.find(x=>x.id===r.sel && !x.isFolder)){ selectFile(r.sel); }
@@ -3455,34 +3458,49 @@ function renderMyDriveLive(){
   document.getElementById('folderCrumb').style.display='none';
   setNavActive(null);
 }
+let folderCache={};   // session cache of mapped folder listings (stale-while-revalidate) — keeps revisits instant
 function openLiveFolder(id,name,targetView){
   const isRoot = id==='root';
+  const tv = targetView||'list';
   state.navKind=null;
   state.curFolder = {id:(isRoot?'root':id), name:(isRoot?'My Drive':(name||'Folder'))};
+  // ---- immediate feedback (before the network call) ----
+  FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
+  if(isRoot){
+    state.level='mydrive';
+    document.getElementById('crumbRoot').classList.add('here');
+    document.getElementById('crumbSep').style.display='none';
+    document.getElementById('folderCrumb').style.display='none';
+    setNavActive(null); setScopeChip(null);
+    document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav==='mydrive'));
+  } else {
+    state.level='folder';
+    document.getElementById('crumbRoot').classList.remove('here');
+    document.getElementById('crumbSep').style.display='';
+    const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
+    setNavActive(name); setScopeChip(name);
+  }
+  document.getElementById('screen').classList.add('ghost');
+  document.querySelector('.stage-wrap').classList.remove('ghost');
+  // instant render from cache if we've seen this folder this session (stale-while-revalidate)
+  const key=isRoot?'root':id, cached=folderCache[key];
+  if(cached){
+    cached.forEach(f=>FILES.push(f));
+    state.coverId=(FILES.find(f=>!f.isFolder)||FILES[0]||{}).id;
+    state.loadingFolder=false; renderHome();
+  }
+  setView(tv);   // instant: cached data, or a "Loading…" state
+  // ---- fetch (revalidate) ----
   driveListAll("'"+id+"' in parents and trashed=false","folder,name")
     .then(files=>{
-      FILES.length=0; files.forEach(d=>FILES.push(mapDriveFile(d)));
-      state.filesFolderId=id;
-      state.coverId=(FILES.find(f=>!f.isFolder)||FILES[0]||{}).id; state.selected=null; state.query='';
-      if(isRoot){
-        state.level='mydrive';
-        document.getElementById('crumbRoot').classList.add('here');
-        document.getElementById('crumbSep').style.display='none';
-        document.getElementById('folderCrumb').style.display='none';
-        setNavActive(null); setScopeChip(null);
-        document.querySelectorAll('.nav-item[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav==='mydrive'));
-      } else {
-        state.level='folder';
-        document.getElementById('crumbRoot').classList.remove('here');
-        document.getElementById('crumbSep').style.display='';
-        const fc=document.getElementById('folderCrumb'); fc.style.display=''; fc.textContent=name||'Folder';
-        setNavActive(name); setScopeChip(name);
-      }
-      document.getElementById('screen').classList.add('ghost');
-      document.querySelector('.stage-wrap').classList.remove('ghost');
+      const mapped=files.map(mapDriveFile); folderCache[key]=mapped;
+      if(state.curFolder.id!==key) return;   // user navigated elsewhere; ignore stale response
+      FILES.length=0; mapped.forEach(f=>FILES.push(f));
+      state.coverId=(FILES.find(f=>!f.isFolder)||FILES[0]||{}).id;
+      state.loadingFolder=false;
       renderHome();
-      setView(targetView||'list');
-    }).catch(e=>toast('Could not open folder: '+e.message));
+      setView(tv);   // re-render with fresh data (applyRestore runs now)
+    }).catch(e=>{ state.loadingFolder=false; if(!cached) toast('Could not open folder: '+e.message); });
 }
 function renderColumnsFromCurrent(){
   const cf=state.curFolder;
@@ -3494,9 +3512,10 @@ function renderColumnsFromCurrent(){
 /* ---- columns view (Finder Miller columns) ---- */
 let COL_PATH=[], colCache={}, colSelectedFile=null, colFileObj=null;
 function colChildren(id){
+  if(folderCache[id]) return Promise.resolve(folderCache[id]);
   if(colCache[id]) return Promise.resolve(colCache[id]);
   return driveListAll("'"+id+"' in parents and trashed=false","folder,name")
-    .then(files=>{ const items=files.map(mapDriveFile); colCache[id]=items; return items; });
+    .then(files=>{ const items=files.map(mapDriveFile); colCache[id]=items; folderCache[id]=items; return items; });
 }
 function colPathFor(id,name){   // build [root … folder] by walking parents
   const chain=[{id:id,name:name||'Folder'}];
