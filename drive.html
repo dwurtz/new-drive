@@ -1510,6 +1510,33 @@ function srcChip(src){
 /* ============ THUMBNAILS (dispatch on type) ============ */
 const fileList = document.getElementById('fileList');
 function isFuture(f){ return f.added < state.asOf; }
+/* ---- reliable thumbnails: try Drive's thumbnailLink, fall back to an authenticated byte fetch ----
+   (lh3.googleusercontent.com thumbnail URLs need a Google session cookie and often 403 from an <img>) */
+const blobCache={};
+function ensureBlob(f){
+  if(blobCache[f.id]) return Promise.resolve(blobCache[f.id]);
+  return fetch('https://www.googleapis.com/drive/v3/files/'+cidOf(f)+'?alt=media',{headers:authHeaders()})
+    .then(r=>{ if(!r.ok) throw new Error(r.status); return r.blob(); })
+    .then(b=>{ const u=URL.createObjectURL(b); blobCache[f.id]=u; return u; });
+}
+function blobFallback(img){
+  img.onerror=null;
+  const f=FILES.find(x=>x.id===img.getAttribute('data-blobid')); if(!f) return;
+  if(previewMode(f)==='image'){   // only real images can be shown as <img>; fetch the bytes
+    ensureBlob(f).then(u=>{ img.src=u; img.classList.remove('cf-iconimg'); })
+      .catch(()=>{ if(f.iconLink){ img.src=f.iconLink; img.classList.add('cf-iconimg'); } });
+  } else if(f.iconLink){ img.src=f.iconLink; img.classList.add('cf-iconimg'); }
+}
+/* call after innerHTML to load every <img data-blobid> (thumbnail-first, blob-fallback) */
+function hydrateImages(root){
+  (root||document).querySelectorAll('img[data-blobid]').forEach(img=>{
+    if(img.dataset.hydrated) return; img.dataset.hydrated='1';
+    const f=FILES.find(x=>x.id===img.getAttribute('data-blobid')); if(!f) return;
+    if(blobCache[f.id]){ img.src=blobCache[f.id]; return; }
+    if(f.thumbnailLink){ img.onerror=()=>blobFallback(img); img.src=f.thumbnailLink.replace(/=s\d+.*$/,'=s1600'); }
+    else { blobFallback(img); }
+  });
+}
 function renderThumb(f, variant){
   variant = variant || 'list';
   if(f.live) return liveThumb(f, variant);
@@ -2101,9 +2128,7 @@ function renderListView(){
 const gallery = document.getElementById('gallery');
 function collageThumb(f){
   if(f.isFolder) return `<div class="cc-fold">${folderIco()}</div>`;
-  const t=f.thumbnailLink?f.thumbnailLink.replace(/=s\d+.*$/,'=s400'):(f.iconLink||'');
-  if(t) return `<img src="${t}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${f.iconLink||''}';this.classList.add('cc-icon')">`;
-  return `<div class="cc-fic">${fileIco16()}</div>`;
+  return `<img data-blobid="${f.id}" referrerpolicy="no-referrer">`;
 }
 function pickAssortment(items,n){   // a visual sampler: thumbnailed files first, then other files, then folders
   const withThumb=items.filter(f=>!f.isFolder && f.thumbnailLink);
@@ -2149,6 +2174,7 @@ function renderGallery(){
           <div class="gcard-foot"><b>${escapeHTML(f.short)}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
         </div>`).join('')}
     </div>`;
+  hydrateImages(gallery);
 }
 
 /* ============ selection / preview (combined: multi-page OR colored + provenance + suggestions) ============ */
@@ -2421,8 +2447,7 @@ function setView(v){
 let carIndex=0; const CGAP=48;
 function cfCardInner(f){
   if(f.live){
-    const thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+.*$/,'=s1600') : '';
-    if(thumb) return `<div class="cf-live"><img src="${thumb}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${f.iconLink||''}';this.classList.add('cf-iconimg')"></div>`;
+    if(f.thumbnailLink || previewMode(f)==='image') return `<div class="cf-live"><img data-blobid="${f.id}" referrerpolicy="no-referrer"></div>`;
     return `<div class="cf-live cf-fallback"><div class="cf-fic">${f.iconLink?`<img src="${f.iconLink}" referrerpolicy="no-referrer">`:fileIco16()}</div><div class="cf-fname">${escapeHTML(f.short)}</div></div>`;
   }
   const custom=previewContentFor(f);
@@ -2443,6 +2468,7 @@ function renderCarousel(){
     <div class="cf-strip" id="cfStrip">
       ${vis.map((f,i)=>`<div class="cf-thumb" data-i="${i}" onclick="cfGo(${i})"><div class="cf-tt">${f.title?f.title.slice(0,3).join('<br>'):f.short}</div></div>`).join('')}
     </div>`;
+  hydrateImages(carousel);
   cfLayout();
 }
 function cfLayout(){
@@ -3854,8 +3880,7 @@ function postComment(f,text,anchor){
 function liveThumb(f,cls){
   const big=cls==='gallery';
   if(f.isFolder){ return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;color:var(--muted)">${big?folderIco():folderIco16()}</div>`; }
-  const src=f.thumbnailLink||f.iconLink||'';
-  return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;${big?'':'padding:0'}"><img src="${src}" referrerpolicy="no-referrer" style="max-width:100%;max-height:100%;object-fit:${big?'cover':'contain'}" onerror="this.onerror=null;this.src='${f.iconLink||''}'"></div>`;
+  return `<div class="${big?'gthumb':'fthumb'} ctframe" style="display:grid;place-items:center;background:#fff;${big?'':'padding:0'}"><img data-blobid="${f.id}" referrerpolicy="no-referrer" style="max-width:100%;max-height:100%;object-fit:${big?'cover':'contain'}"></div>`;
 }
 /* ---- setup dialog ---- */
 function showDriveSetup(){
