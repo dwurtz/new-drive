@@ -2076,20 +2076,23 @@ function renderList(){
   fileList.classList.toggle('has-selection', state.checked.size>0);
   syncSelectionBar();
 }
-/* list view: when a file is selected, split into a compact list + live preview; otherwise full-width table */
+/* list view is always a compact file list on the left + a live preview on the right */
 function renderListView(){
   const lp=document.getElementById('listpane'), stage=document.getElementById('stage');
+  lp.classList.add('with-preview');
+  stage.classList.remove('ghost','is-home');
+  renderList();
   const f=state.selected && FILES.find(x=>x.id===state.selected);
-  const split = !!(f && !f.isFolder && !state.focused);
-  lp.classList.toggle('with-preview', split);
-  if(split){
-    stage.classList.remove('ghost','is-home');
-    renderList();
-    renderPreview(f.id);   // real preview into the stage, list stays on the left
+  if(f && !f.isFolder && !state.focused){
+    renderPreview(f.id);   // live preview of the selected file
   } else {
-    stage.classList.add('ghost','is-home');
+    // a folder (or nothing) is selected → gentle placeholder in the preview pane
     liveComments=[];
-    renderList();
+    document.getElementById('pvExt').textContent='';
+    document.getElementById('pvTitle').textContent = f ? f.name : '';
+    const canvas=document.querySelector('.pv-canvas');
+    if(canvas) canvas.innerHTML = `<div class="pv-unsupported" style="color:var(--faint);font-size:13px">${f&&f.isFolder?'Double-click to open this folder':'Select a file to preview'}</div>`;
+    home.style.display='none'; preview.style.display='flex'; emptyHint.style.display='none';
     if(state.infoOpen) renderInfo();
   }
 }
@@ -2402,9 +2405,12 @@ function setView(v){
     lp.classList.remove('gallery-mode'); lp.classList.add('finder'); fileList.classList.remove('ghost');
     gallery.classList.add('ghost'); carousel.classList.add('ghost'); columnsEl.classList.add('ghost');
     const vis=getVisibleFiles();
-    if(state.selected && !vis.some(f=>f.id===state.selected)) state.selected=null;   // drop stale selection
+    if(!state.selected || !vis.some(f=>f.id===state.selected)){
+      const firstFile=vis.find(f=>!f.isFolder);          // auto-preview the first file so the preview is always populated
+      state.selected = firstFile ? firstFile.id : (vis[0]?vis[0].id:null);
+    }
     liveComments=[];
-    renderListView();   // selected file → split with preview; otherwise the full sortable table
+    renderListView();
   }
   autoRail();
   applyRestore();
