@@ -209,7 +209,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* list pane */
 .listpane{width:var(--list-w);flex:none;min-height:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--surface)}
-.listpane.gallery-mode{width:auto;flex:1;border-right:none}
+.listpane.gallery-mode{width:auto;flex:1;border-right:none;min-width:0}
 .listpane.collapsed{display:none}
 .listpane.collapsed + .stage{border-left:none}
 .lp-head{
@@ -1013,7 +1013,7 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 #driveCidInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .dlg-act{display:flex;justify-content:flex-end;gap:8px}
 /* ---------- columns (Finder Miller columns) ---------- */
-.columns{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;background:var(--surface);min-height:0}
+.columns{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;background:var(--surface);min-height:0;min-width:0}
 .columns::-webkit-scrollbar{height:10px}
 .columns::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px;border:3px solid var(--surface)}
 .col{flex:none;width:290px;border-right:1px solid var(--line);overflow-y:auto;padding:6px}
@@ -3665,9 +3665,13 @@ function renderColumns(){
       <div class="cp-doc" id="colPvDoc"></div>`;
     renderColPreview(f, pcol.querySelector('#colPvDoc'));
   }
-  // scroll the right-most pane fully into view only AFTER every column has its real content
-  // (otherwise we scroll a half-empty container and the preview ends up off-screen)
-  Promise.all(proms).then(()=>{ requestAnimationFrame(()=>{ cont.scrollLeft=cont.scrollWidth; }); });
+  // scroll the right-most pane fully into view once every column has its real content
+  // (layout width settles across a few frames, so nudge it a few times)
+  Promise.all(proms).then(()=>{ requestAnimationFrame(revealColEnd); [40,150,350].forEach(d=>setTimeout(revealColEnd,d)); });
+}
+function revealColEnd(){   // scroll so the right-most column (preview, or deepest folder) is fully visible
+  const cont=document.getElementById('columns'); if(!cont) return;
+  cont.scrollLeft = cont.scrollWidth;   // clamps to max scroll → right edge of the last column aligns to the right
 }
 /* render the actual file content inside the column preview pane */
 function renderColPreview(f, box){
