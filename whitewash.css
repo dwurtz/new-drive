@@ -1,0 +1,48 @@
+/* whitewash.css — minimalist, near-white re-skin. Loaded last; overrides tokens. */
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f7f9;
+  --surface-3: #eef0f2;
+  --ink: #1b1c1f;
+  --ink-2: #3b3d42;
+  --ink-dim: #6b7077;
+  --ink-faint: #a7abb2;
+  --border: #ececef;
+  --border-strong: #dadce0;
+  --border-faint: #f3f4f6;
+  --blue-soft: #eef3fe;
+  /* near-flat shadows */
+  --sh-1: 0 1px 2px rgba(20,20,30,.03);
+  --sh-2: 0 1px 3px rgba(20,20,30,.05);
+  --sh-3: 0 10px 34px rgba(20,20,30,.10);
+  --sh-4: 0 22px 60px rgba(20,20,30,.16);
+}
+
+/* flatten chrome — fewer borders/shadows/fills */
+.create-btn, .sb-rail-create { box-shadow: none; border: 1px solid var(--border); background: var(--surface); }
+.search, .gem-search { box-shadow: none; border-color: var(--border); }
+.tb-icon, .sb-rail-toggle { border-color: transparent; }
+.sb-rail-toggle { background: transparent; }
+.sb-rail-toggle:hover { background: var(--surface-2); }
+
+/* cards: drop ambient shadows, keep a hairline */
+.dh-folder-card, .dh-file-card, .gd-card,
+.cs-kpi, .cs-card, .cs-mon-kpi,
+.sr-row, .sr-people, .sr-refine, .sr-answer, .pv-fv-card,
+.dash-kpi, .dash-card { box-shadow: none !important; }
+.dh-folder-card:hover, .dh-file-card:hover, .sr-row:hover { box-shadow: var(--sh-1) !important; }
+
+/* calmer surfaces */
+.fc-canvas-cover { background: var(--surface-2); }
+.pv-doc.create { background: var(--surface); }
+.pv-doc, .pv-doc.folderview, .pv-doc.files { background: var(--surface); }
+.sr-body { background: var(--surface); }
+.pv-doc.fill { background: var(--surface); }
+
+/* lighter type for headings — less heavy */
+.dh-welcome { font-weight: 500; letter-spacing: -.01em; }
+
+/* topbar: hairline divider only */
+.topbar { border-bottom: 1px solid var(--border-faint); }
