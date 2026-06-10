@@ -246,7 +246,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .fmeta span{font-size:11.5px;color:var(--faint);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .fmeta span svg{vertical-align:-1px;margin-right:1px}
 .frow .star{display:none}
-.frow .cover-tag{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted);background:var(--surface-2);padding:2px 6px;border-radius:5px;flex:none;display:flex;align-items:center;gap:3px}
+.cover-tag{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted);background:var(--surface-2);padding:2px 6px;border-radius:5px;flex:none;display:inline-flex;align-items:center;gap:3px;vertical-align:1px}
 
 /* row checkbox + quick actions (additive) */
 .frow .fcheck{
@@ -758,6 +758,20 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .vtl-desc{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:3px;padding-left:26px}
 .vtl-row.future{opacity:.38}
 .vtl-row.asof .vtl-top b{color:var(--accent)}
+.vtl-row.reverted .vtl-top b,.vtl-row.reverted .vtl-desc{color:var(--faint);text-decoration:line-through}
+.vtl-mark.vtl-revert{color:var(--muted)}
+/* feed actor badges + revert entries */
+.fev-badge{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--hover);color:var(--muted);flex:none;line-height:1.4}
+.fev-badge.reverted-b{background:none;border:1px solid var(--line-2);color:var(--faint)}
+.fev-dot.revert{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.fev.reverted .fev-top b,.fev.reverted .fev-desc{color:var(--faint);text-decoration:line-through}
+.fev.reverted .fev-dot{opacity:.55}
+/* pinned restore bar (info panel, when scrubbed into the past) */
+.ip-restore{position:sticky;top:0;z-index:6;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow-md)}
+.ip-restore .t{font-size:12.5px;color:var(--muted);line-height:1.45}
+.ip-restore .t b{color:var(--ink);font-weight:600}
+.ip-restore-acts{display:flex;align-items:center;gap:14px;margin-top:10px}
+.ip-restore .aabtn{padding:6px 12px;font-size:12px}
 
 /* ---------- agent drawer ---------- */
 .drawer{width:0;flex:none;border-left:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;transition:width .42s var(--ease)}
@@ -895,6 +909,16 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 .spawn-scope .lock{margin-left:auto;color:var(--faint)}
 .spawn-actions{display:flex;gap:9px;margin-top:4px}
 .spawn-actions .aabtn{flex:1;justify-content:center}
+.spawn-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.preset-chip{
+  padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+  font-size:12px;font-weight:500;color:var(--muted);transition:.14s;cursor:pointer;
+}
+.preset-chip:hover{border-color:var(--muted);color:var(--ink)}
+.preset-chip.on{background:var(--pill);border-color:transparent;color:#0b1f33;font-weight:600}
+.fol-agent{display:inline-flex;vertical-align:-2px;margin-left:6px;flex:none}
+.ctx-menu .folder-only{display:none}
+.ctx-menu.for-folder .folder-only{display:flex}
 
 /* ---------- time machine ---------- */
 .timebar{
@@ -1048,6 +1072,40 @@ kbd{font-family:"JetBrains Mono",monospace;font-size:10.5px;background:var(--sur
 /* gallery keyboard selection */
 .gcard.active{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px}
 .cover-hero.active{outline:2px solid var(--accent);outline-offset:3px;border-radius:14px}
+
+/* ===== per-folder cover slides + cover-first share ===== */
+.cover-live-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:block}
+/* small frames render the live app miniaturized (scaled, non-interactive) */
+.cover-page .cover-live-frame,.share-cover-thumb .cover-live-frame{width:300%;height:300%;transform:scale(.3333);transform-origin:0 0;pointer-events:none}
+.chip-btn{cursor:pointer;transition:background .14s}
+.chip-btn:hover{background:var(--hover)}
+/* share dialog */
+.share-dlg{width:min(520px,92vw)}
+.share-row{display:flex;gap:8px;margin-bottom:18px}
+.share-row input{flex:1;min-width:0;border:1px solid var(--line-2);border-radius:9px;padding:9px 12px;font-size:13.5px;background:var(--surface);color:var(--ink)}
+.share-row input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.share-role{border:1px solid var(--line-2);border-radius:9px;padding:9px 10px;font-size:13px;font-weight:600;background:var(--surface);color:var(--ink)}
+.share-cover{display:flex;gap:16px;align-items:stretch;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:18px}
+.share-cover-thumb{width:92px;aspect-ratio:8.5/11;flex:none;position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow-sm)}
+.share-cover-none{position:absolute;inset:0;display:grid;place-items:center;color:var(--faint)}
+.share-cover-txt{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.share-cover-txt b{font-size:13.5px;font-weight:600}
+.share-cover-txt span{font-size:12px;color:var(--muted);line-height:1.5}
+.share-pv-btn{margin-top:auto;align-self:flex-start}
+.share-pv-btn[disabled]{opacity:.45;pointer-events:none}
+/* recipient view (full-screen cover-first landing) */
+.recip{position:fixed;inset:0;z-index:340;background:var(--surface-2);display:none;flex-direction:column}
+.recip.open{display:flex;animation:rise .3s var(--ease)}
+.recip-x{position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--muted);background:var(--surface);border:1px solid var(--line);z-index:2;transition:.15s;cursor:pointer}
+.recip-x:hover{background:var(--hover);color:var(--ink)}
+.recip-stage{flex:1;min-height:0;display:grid;place-items:center;padding:48px 48px 16px}
+.recip-slide{position:relative;height:min(74vh,860px);aspect-ratio:8.5/11;max-width:88vw;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden}
+.recip-slide.app{aspect-ratio:auto;width:min(1080px,90vw);height:min(74vh,820px)}
+.recip-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 48px 26px}
+.recip-meta b{font-family:"Fraunces",serif;font-size:19px;font-weight:600;display:block}
+.recip-meta span{font-size:12.5px;color:var(--muted)}
+.recip-browse{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted);border:1px solid var(--line-2);background:var(--surface);border-radius:10px;padding:9px 16px;transition:.15s;cursor:pointer}
+.recip-browse:hover{background:var(--hover);color:var(--ink)}
 
 svg{display:block}
 .ghost{display:none!important}
@@ -1207,7 +1265,7 @@ svg{display:block}
                 <button class="tbtn" onclick="clearSelection()" title="Back to folder"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg></button>
                 <button class="tbtn" title="Star"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5.5 6 .5-4.5 4 1.4 6L12 16l-5.4 3 1.4-6L3.5 9l6-.5z"/></svg></button>
                 <button class="tbtn" title="Set as cover" onclick="setCoverFromPreview()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></button>
-                <button class="tbtn" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button>
+                <button class="tbtn" title="Share" onclick="openShareDialog(state.selected)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg></button>
               </div>
             </div>
             <div class="pv-canvas" id="pvCanvas"></div>
@@ -1292,6 +1350,7 @@ svg{display:block}
 <!-- row context menu (single instance) -->
 <div class="ctx-menu" id="rowCtx">
   <button class="ctx-mi" data-act="open"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 012-2h6l2 3h6a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg> Open<span class="sc">↵</span></button>
+  <button class="ctx-mi folder-only" data-act="agent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2a4 4 0 014 4v1a4 4 0 01-8 0V6a4 4 0 014-4z"/><path d="M5 21v-1a7 7 0 0114 0v1"/></svg> New agent in this folder…</button>
   <button class="ctx-mi" data-act="cover"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg> Set as cover</button>
   <button class="ctx-mi" data-act="rename"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg> Rename</button>
   <button class="ctx-mi" data-act="share"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg> Share</button>
@@ -1482,7 +1541,25 @@ const FILE_WEBAPP = {
 };
 FILES.splice(1, 0, FILE_WEBAPP, FILE_BRIEF, FILE_GDOC2, FILE_GSHEET, FILE_SHEET, FILE_IMAGE, FILE_IMG_PROPERTY, FILE_DEED, FILE_GDOC1);
 
-const ACTIVITY = [];   // real folder activity is derived from live files (see liveFeed)
+/* Folder history. Seeded entries (est:true) are the mock Estate-docs timeline; their `when`
+   values intentionally match the mock FILES `added` values so time travel hides the right files.
+   Runtime entries (agent created, cover set, shares, restores) are unshifted with when:0.
+   History is append-only: restore marks entries reverted, never removes them. */
+const ACTIVITY = [
+  {est:true, kind:'agent',  who:'Claude agent',   when:0,  title:'Claude agent',   desc:'Published “Estate Plan — Summary & Open Questions”, a decision memo drafted across every document in the folder.'},
+  {est:true, kind:'agent',  who:'Gemini agent',   when:0,  title:'Gemini agent',   desc:'Generated the “Estate Readiness” dashboard and refreshed the Estate Document Index.'},
+  {est:true, kind:'agent',  who:'Gemini agent',   when:1,  title:'Gemini agent',   desc:'Reconciled the Asset & Beneficiary Inventory against the trust — 2 assets still pending.'},
+  {est:true, kind:'person', who:'David Wurtz',    when:2,  title:'David Wurtz',    desc:'Uploaded the executed Last Will & Testament and a photo of the notarized signature page.'},
+  {est:true, kind:'person', who:'David Wurtz',    when:3,  title:'David Wurtz',    desc:'Added the “Letter of Wishes” for the trustees.'},
+  {est:true, kind:'person', who:'Dominique Igoe', when:5,  title:'Dominique Igoe', desc:'Updated the Estate Expenses & Disbursements log.'},
+  {est:true, kind:'person', who:'Dominique Igoe', when:6,  title:'Dominique Igoe', desc:'Uploaded a photo of the Flagstaff home — the 2nd-home asset pending retitling.'},
+  {est:true, kind:'person', who:'Michael Igoe',   when:7,  title:'Michael Igoe',   desc:'Added the recorded Warranty Deed for the Flagstaff residence.'},
+  {est:true, kind:'person', who:'Dominique Igoe', when:8,  title:'Dominique Igoe', desc:'Shared notes from the estate-planning meeting with Igoe Law LLP.'},
+  {est:true, kind:'person', who:'Michael Igoe',   when:9,  title:'Michael Igoe',   desc:'Added the Certification of Trust.'},
+  {est:true, kind:'agent',  who:'Gemini agent',   when:18, title:'Gemini agent',   desc:'Filed both durable POAs to the folder naming convention; Dominique’s draft will arrived.'},
+  {est:true, kind:'person', who:'David Wurtz',    when:22, title:'David Wurtz',    desc:'Added both health-care directives.'},
+  {est:true, kind:'person', who:'Michael Igoe',   when:24, title:'Michael Igoe',   desc:'Created the folder with the General Assignment, HIPAA authorizations, and the tangible-property list.'}
+];
 
 let state = { view:'list', selected:null, agentOpen:false, asOf:0, coverId:'index' };
 let DRIVE_USER = {};
@@ -1497,6 +1574,25 @@ state.returnView = 'gallery';
 state.level = 'folder';
 state.curFolder = null;   // {id,name} of the folder you're in (null for query views)
 let _lastCheckedId = null;
+
+/* ---- per-folder cover slides ----
+   keyed by live folder id; 'estate' = the mock Estate docs folder; 'nav:<kind>' = query views */
+const COVER_BY_FOLDER = { estate:'index', 'mock:Estate docs':'index' };   // feature-1's enterFolder keys the mock folder 'mock:Estate docs'
+let _ctxCoverKey = null;   // set when the context menu was opened from a specific Miller column
+function coverKey(){
+  if(state.curFolder && state.curFolder.id) return state.curFolder.id;
+  if(state.navKind) return 'nav:'+state.navKind;
+  return 'estate';
+}
+function userCoverId(){ return COVER_BY_FOLDER[coverKey()] || null; }
+function setFolderCover(id, key){
+  COVER_BY_FOLDER[key||coverKey()] = id;
+  const f = findItem(id);
+  if(state.view==='gallery') renderGallery();
+  else if(state.view==='columns') renderColumns();
+  else renderList();
+  toast('“'+((f&&(f.short||f.name))||'Item')+'” is now the folder cover');
+}
 
 /* ============ provenance (workspace feature) ============ */
 const APP_GLYPH = {
@@ -1514,7 +1610,7 @@ function srcChip(src){
 
 /* ============ THUMBNAILS (dispatch on type) ============ */
 const fileList = document.getElementById('fileList');
-function isFuture(f){ return f.added < state.asOf; }
+function isFuture(f){ return !!f.revertedOut || f.added < state.asOf; }
 /* ---- reliable thumbnails: try Drive's thumbnailLink, fall back to an authenticated byte fetch ----
    (lh3.googleusercontent.com thumbnail URLs need a Google session cookie and often 403 from an <img>) */
 const blobCache={};
@@ -1527,7 +1623,7 @@ function ensureBlob(f){
 }
 function blobFallback(img){
   img.onerror=null;
-  const f=FILES.find(x=>x.id===img.getAttribute('data-blobid')); if(!f) return;
+  const f=findItem(img.getAttribute('data-blobid')); if(!f) return;
   if(previewMode(f)==='image'){   // only real images can be shown as <img>; fetch the bytes
     ensureBlob(f).then(u=>{ img.src=u; img.classList.remove('cf-iconimg'); })
       .catch(()=>{ if(f.iconLink){ img.src=f.iconLink; img.classList.add('cf-iconimg'); } });
@@ -1535,7 +1631,7 @@ function blobFallback(img){
 }
 function loadBlobImg(img){
   if(img.dataset.loaded) return; img.dataset.loaded='1';
-  const f=FILES.find(x=>x.id===img.getAttribute('data-blobid')); if(!f) return;
+  const f=findItem(img.getAttribute('data-blobid')); if(!f) return;
   if(blobCache[f.id]){ img.src=blobCache[f.id]; return; }
   if(f.thumbnailLink){ img.onerror=()=>blobFallback(img); img.src=f.thumbnailLink.replace(/=s\d+.*$/,'=s1600'); }
   else { blobFallback(img); }
@@ -2090,7 +2186,7 @@ function rowHTML(f){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
       </span>
       ${finderIcon(f)}
-      <span class="nm-wrap"><span class="nm">${escapeHTML(f.short)}</span><span class="fc-sub">${escapeHTML(f.by||'')} · ${escapeHTML(fileDateStr(f))}</span></span>
+      <span class="nm-wrap"><span class="nm">${escapeHTML(f.short)}${folderAgentMark(f,12)}</span><span class="fc-sub">${escapeHTML(f.by||'')} · ${escapeHTML(fileDateStr(f))}</span></span>${f.id===userCoverId()?'<span class="cover-tag">COVER</span>':''}
     </div>
     <div class="fc-size">${f.isFolder?'—':escapeHTML(f.size||'—')}</div>
     <div class="fc-kind">${escapeHTML(kindLabel(f))}</div>
@@ -2153,17 +2249,32 @@ function pickAssortment(items,n){   // a visual sampler: thumbnailed files first
   const folders=items.filter(f=>f.isFolder);
   return withThumb.concat(otherFiles, folders).slice(0,n);
 }
+/* a cover slide shows the real thing: HTML web apps run LIVE in a sandboxed iframe */
+function coverSlideHTML(f){
+  if(!f) return '';
+  if(f.type==='webapp' && f.app) return `<iframe class="cover-live-frame" data-coverapp="${f.id}" title="${escapeHTML(f.short||f.name||'')}" sandbox="allow-scripts"></iframe>`;
+  return renderThumb(f,'gallery');
+}
+/* call after innerHTML — boots live-app cover iframes (srcdoc can't ride along in the template string) */
+function hydrateCoverFrames(root){
+  (root||document).querySelectorAll('iframe[data-coverapp]').forEach(fr=>{
+    if(fr.dataset.booted) return; fr.dataset.booted='1';
+    const f=findItem(fr.getAttribute('data-coverapp'));
+    if(f && f.app) fr.srcdoc=f.app;
+  });
+}
 function renderGallery(){
   const items = getVisibleFiles();
   if(!items.length){ gallery.innerHTML='<div style="margin:24px 2px;color:var(--faint);font-size:13px">'+(state.loadingFolder?'Loading…':'This folder is empty.')+'</div>'; return; }
   const folders = items.filter(f=>f.isFolder).length, files = items.length-folders;
   const fname = (state.curFolder&&state.curFolder.name)||'My Drive';
-  const userCover = state.userCover ? items.find(f=>f.id===state.userCover) : null;
+  const _cid = userCoverId();
+  const userCover = _cid ? items.find(f=>f.id===_cid) : null;
   let heroLeft, heroTitle, heroClick;
   if(userCover){   // a cover was elevated → showcase that single item
-    heroLeft = `<div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${renderThumb(userCover,'gallery')}</div></div>`;
+    heroLeft = `<div class="cover-page" style="position:relative"><div style="position:absolute;inset:0">${coverSlideHTML(userCover)}</div></div>`;
     heroTitle = escapeHTML(userCover.name);
-    heroClick = userCover.isFolder?`onclick="openLiveFolder('${cidOf(userCover)}','${escapeHTML(userCover.name)}')"`:`onclick="selectFile('${userCover.id}')"`;
+    heroClick = userCover.isFolder?`data-n="${escapeHTML(userCover.name)}" onclick="openLiveFolder('${cidOf(userCover)}',this.dataset.n)"`:`onclick="selectFile('${userCover.id}')"`;
   } else {   // default → an assortment of the folder's contents
     const picks = pickAssortment(items, 6);
     heroLeft = `<div class="cover-collage">${picks.map(f=>`<div class="cc-cell" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">${collageThumb(f)}</div>`).join('')}</div>`;
@@ -2174,24 +2285,27 @@ function renderGallery(){
     <div class="cover-hero" ${heroClick} style="${userCover?'cursor:pointer':''}">
       ${heroLeft}
       <div>
+        ${userCover?`<div class="cover-badge">Cover · ${escapeHTML(fname)}</div>`:''}
         <div class="cover-title">${heroTitle}</div>
         <div class="cover-desc">${escapeHTML(fname)} — ${items.length} item${items.length===1?'':'s'}, kept in sync with your Google Drive.</div>
         <div class="cover-meta">
           <span class="chip"><b>${folders}</b> folder${folders===1?'':'s'}</span>
           <span class="chip"><b>${files}</b> file${files===1?'':'s'}</span>
           ${userCover?'<span class="chip">'+SPARK+' Cover</span>':'<span class="chip">Updated <b>'+dstr(daysAgo((items.find(f=>!f.isFolder)||items[0]||{}).added||0))+'</b></span>'}
+          <button class="chip chip-btn" onclick="event.stopPropagation();openShareDialog(null)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg> Share</button>
         </div>
       </div>
     </div>
     <h3 class="section-h" style="padding:0 2px">All items</h3>
     <div class="gal-grid">
       ${items.map(f=>`
-        <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'${f.isFolder?'folder':'file'}','${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">
+        <div class="gcard ${state.selected===f.id?'active':''}" draggable="true" ondragstart="dragItem(event,'${f.isFolder?'folder':'file'}','${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')" data-n="${escapeHTML(f.name)}" onclick="${f.isFolder?`openLiveFolder('${cidOf(f)}',this.dataset.n)`:`selectFile('${f.id}')`}">
           <div class="gpage">${renderThumb(f,'gallery')}</div>
-          <div class="gcard-foot"><b>${escapeHTML(f.short)}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
+          <div class="gcard-foot"><b>${escapeHTML(f.short)}${folderAgentMark(f,12)}${f.id===_cid?' <span class="cover-tag">COVER</span>':''}</b><span>${escapeHTML(f.by||'')} · ${dstr(daysAgo(f.added||0))}</span></div>
         </div>`).join('')}
     </div>`;
   hydrateImages(gallery);
+  hydrateCoverFrames(gallery);
 }
 
 /* ============ selection / preview (combined: multi-page OR colored + provenance + suggestions) ============ */
@@ -2302,7 +2416,7 @@ function renderDetails(f){
     <div class="det-row"><span class="k">Size</span><span class="v mono">${f.size}</span></div>
     <div class="det-row"><span class="k">Owner</span><span class="v">${f.by}</span></div>
     <div class="det-row"><span class="k">Modified</span><span class="v mono">${daysAgo(f.added).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></div>
-    <div class="det-row"><span class="k">In cover</span><span class="v">${f.id===state.coverId?'Yes — folder cover':'No'}</span></div>
+    <div class="det-row"><span class="k">In cover</span><span class="v">${f.id===userCoverId()?'Yes — folder cover':'No'}</span></div>
     <div class="det-row"><span class="k">Agent status</span><span class="v">${f.note?'Reviewed':'Clean'}</span></div>`;
 }
 
@@ -2415,6 +2529,8 @@ function enterFolder(name){
   setNavActive(name);
   if(f && f.populated){
     state.level='folder';
+    state.asOf=0;
+    state.curFolder={id:'mock:'+name, name:name};
     document.getElementById('screen').classList.add('ghost');
     document.querySelector('.stage-wrap').classList.remove('ghost');
     setView(state.view||'list');
@@ -2491,7 +2607,7 @@ function renderCarousel(){
     <button class="cf-nav prev" onclick="cfGo(carIndex-1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 18l-6-6 6-6"/></svg></button>
     <button class="cf-nav next" onclick="cfGo(carIndex+1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 18l6-6-6-6"/></svg></button>
     <div class="cf-stage"><div class="cf-track" id="cfTrack">
-      ${vis.map((f,i)=>`<div class="cf-card" data-i="${i}" onclick="cfGo(${i})" ondblclick="openFromCarousel(${i})">${cfCardInner(f)}</div>`).join('')}
+      ${vis.map((f,i)=>`<div class="cf-card" data-i="${i}" onclick="cfGo(${i})" ondblclick="openFromCarousel(${i})" oncontextmenu="openRowCtx(event,'${f.id}')">${cfCardInner(f)}</div>`).join('')}
     </div></div>
     <div class="cf-meta" id="cfMeta"></div>
     <div class="cf-strip" id="cfStrip">
@@ -2529,8 +2645,7 @@ function openFromCarousel(i){ const vis=getVisibleFiles(); openFocused(vis[i].id
 /* ============ cover ============ */
 function setCoverFromPreview(){
   if(!state.selected)return;
-  state.coverId=state.selected; state.userCover=state.selected;
-  renderGallery(); toast('Set as folder cover');
+  setFolderCover(state.selected);
 }
 
 /* ============ multi-select / quick actions / context menu ============ */
@@ -2577,6 +2692,7 @@ document.getElementById('selBar').addEventListener('click', e=>{
   const b = e.target.closest('[data-sel-act]'); if(!b) return;
   const act = b.getAttribute('data-sel-act');
   const n = state.checked.size;
+  if(act==='share' && n===1){ openShareDialog([...state.checked][0]); return; }
   const verb = {share:'Sharing',download:'Downloading',move:'Moving',delete:'Removing'}[act] || act;
   toast(`${verb} ${n} item${n===1?'':'s'}`);
   if(act==='delete'){ clearChecks(); }
@@ -2584,14 +2700,16 @@ document.getElementById('selBar').addEventListener('click', e=>{
 function rowQuick(e, act, id){
   e.stopPropagation();
   const f = FILES.find(x=>x.id===id);
-  if(act==='share')    toast(`Sharing “${f.short}”`);
+  if(act==='share')    openShareDialog(id);
   if(act==='download') toast(`Downloading “${f.short}”`);
 }
 const rowCtx = document.getElementById('rowCtx');
 let _ctxId = null;
 function openRowCtx(e, id){
   e.preventDefault(); e.stopPropagation();
-  _ctxId = id;
+  _ctxId = id; _ctxCoverKey = null;
+  const cf = findItem(id);
+  rowCtx.classList.toggle('for-folder', !!(cf && cf.isFolder));
   rowCtx.classList.add('open');
   const mw = rowCtx.offsetWidth || 208, mh = rowCtx.offsetHeight || 320;
   let x = e.clientX, y = e.clientY;
@@ -2601,22 +2719,129 @@ function openRowCtx(e, id){
   rowCtx.style.top  = y+'px';
 }
 function closeRowCtx(){ rowCtx.classList.remove('open'); _ctxId=null; }
+/* columns view: remember WHICH column's folder the item belongs to, so "Set as cover" hits the right folder */
+function openColCtx(e, li, id){ openRowCtx(e, id); _ctxCoverKey=(COL_PATH[li]&&COL_PATH[li].id)||null; }
 rowCtx.addEventListener('click', e=>{
   const mi = e.target.closest('.ctx-mi'); if(!mi) return;
   const act = mi.dataset.act;
-  const f = FILES.find(x=>x.id===_ctxId);
+  const f = findItem(_ctxId);            // resolves mock FILES, live FILES, and column folderCache items
+  const ck = _ctxCoverKey;               // capture before closeRowCtx
   closeRowCtx();
   if(!f) return;
   switch(act){
-    case 'open':     rowOpen(f.id); break;
-    case 'cover':    state.coverId=f.id; state.userCover=f.id; renderGallery(); toast('Set as folder cover'); break;
+    case 'open':
+      if(f.isFolder && !FILES.find(x=>x.id===f.id)){ openLiveFolder(cidOf(f), f.short||f.name); }
+      else { if(!FILES.find(x=>x.id===f.id)) FILES.push(f); rowOpen(f.id); }
+      break;
+    case 'agent':    spawnAgentForFolder(f); break;
+    case 'cover':    setFolderCover(f.id, ck||undefined); break;
     case 'rename':   toast(`Rename “${f.short}”`); break;
-    case 'share':    toast(`Sharing “${f.short}”`); break;
+    case 'share':    openShareDialog(f.id); break;
     case 'move':     toast(`Move “${f.short}”`); break;
     case 'download': toast(`Downloading “${f.short}”`); break;
     case 'remove':   toast(`Removed “${f.short}”`); break;
   }
 });
+
+/* ============ share (cover-first) + recipient view ============ */
+let _shareTarget=null;   // {id,name,isFolder} — for folders, id is the cover key (live folder id / 'estate' / 'nav:*')
+function shareCoverItem(t){
+  if(!t) return null;
+  if(!t.isFolder) return findItem(t.id);
+  const cid=COVER_BY_FOLDER[t.id];
+  const pool=(t.id===coverKey()) ? getVisibleFiles() : (folderCache[t.id]||[]);
+  return (cid && (pool.find(f=>f.id===cid)||findItem(cid))) || pool.find(f=>!f.isFolder) || null;
+}
+function openShareDialog(id){
+  let t;
+  if(!id){   // share the folder you're in
+    t={ id:coverKey(), name:(state.curFolder&&state.curFolder.name)||(state.live?'My Drive':'Estate docs'), isFolder:true };
+  } else {
+    const f=findItem(id); if(!f) return;
+    t = f.isFolder ? { id:cidOf(f), name:f.short||f.name, isFolder:true }
+                   : { id:f.id,     name:f.short||f.name, isFolder:false };
+  }
+  _shareTarget=t;
+  const cover=shareCoverItem(t);
+  let m=document.getElementById('shareDlg');
+  if(!m){ m=document.createElement('div'); m.id='shareDlg'; m.className='dlg-wrap'; m.onclick=(e)=>{ if(e.target===m) closeShareDialog(); }; document.body.appendChild(m); }
+  m.innerHTML=`<div class="dlg share-dlg">
+    <div class="dlg-h">Share “${escapeHTML(t.name)}”</div>
+    <div class="share-row">
+      <input id="shareEmail" type="email" placeholder="Add people by email" autocomplete="off" onkeydown="if(event.key==='Enter')sendShare()">
+      <select id="shareRole" class="share-role"><option>Viewer</option><option>Commenter</option><option>Editor</option></select>
+    </div>
+    <div class="share-cover">
+      <div class="share-cover-thumb">${cover?`<div style="position:absolute;inset:0">${coverSlideHTML(cover)}</div>`:`<div class="share-cover-none">${folderIco()}</div>`}</div>
+      <div class="share-cover-txt">
+        <b>Recipients land on ${t.isFolder?'the cover':'this file'}</b>
+        <span>${cover?escapeHTML(cover.short||cover.name)+' opens first, full screen. Files are one click away.':'No cover yet — recipients see the file list. Right-click any item → “Set as cover”.'}</span>
+        <button class="aabtn share-pv-btn" onclick="openRecipientView()" ${cover?'':'disabled'}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview as recipient</button>
+      </div>
+    </div>
+    <div class="dlg-act">
+      <button class="aabtn" onclick="closeShareDialog()">Cancel</button>
+      <button class="aabtn primary" onclick="sendShare()">Share</button>
+    </div>
+  </div>`;
+  m.classList.add('open');
+  hydrateImages(m); hydrateCoverFrames(m);
+  setTimeout(()=>{ const em=document.getElementById('shareEmail'); em&&em.focus(); },0);
+}
+function closeShareDialog(){ const m=document.getElementById('shareDlg'); if(m){ m.classList.remove('open'); m.innerHTML=''; } }
+function sendShare(){
+  const emEl=document.getElementById('shareEmail');
+  const email=(emEl&&emEl.value||'').trim();
+  const roleEl=document.getElementById('shareRole');
+  const role=(roleEl&&roleEl.value)||'Viewer';
+  if(!email){ toast('Add an email address first'); emEl&&emEl.focus(); return; }
+  const t=_shareTarget; if(!t) return;
+  const who=(DRIVE_USER&&DRIVE_USER.displayName)||'David Wurtz';
+  ACTIVITY.unshift({kind:'person', who:who, when:0, title:who,
+    desc:`Shared “${escapeHTML(t.name)}” with ${escapeHTML(email)} as ${role.toLowerCase()}${t.isFolder?' — they’ll land on the cover.':'.'}`,
+    source:{app:'Drive'}});
+  closeShareDialog();
+  renderFeeds(); if(state.infoOpen) renderInfo();
+  toast(`Shared “${t.name}” with ${email}`);
+}
+/* full-screen preview of what the recipient sees first */
+function openRecipientView(){
+  const t=_shareTarget || { id:coverKey(), name:(state.curFolder&&state.curFolder.name)||(state.live?'My Drive':'Estate docs'), isFolder:true };
+  _shareTarget=t;
+  const cover=shareCoverItem(t);
+  const who=(DRIVE_USER&&DRIVE_USER.displayName)||'David Wurtz';
+  const isApp=!!(cover && cover.type==='webapp' && cover.app);
+  let r=document.getElementById('recipView');
+  if(!r){ r=document.createElement('div'); r.id='recipView'; r.className='recip'; document.body.appendChild(r); }
+  r.innerHTML=`
+    <button class="recip-x" onclick="closeRecipientView()" title="Close (esc)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="recip-stage">
+      <div class="recip-slide ${isApp?'app':''}"><div style="position:absolute;inset:0">${cover?coverSlideHTML(cover):''}</div></div>
+    </div>
+    <div class="recip-foot">
+      <div class="recip-meta"><b>${escapeHTML(t.name)}</b><span>Shared by ${escapeHTML(who)}</span></div>
+      <button class="recip-browse" onclick="recipBrowse()">Browse files <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>`;
+  r.classList.add('open');
+  hydrateImages(r); hydrateCoverFrames(r);
+}
+function closeRecipientView(){ const r=document.getElementById('recipView'); if(r){ r.classList.remove('open'); r.innerHTML=''; } }
+function recipientOpen(){ const r=document.getElementById('recipView'); return !!(r&&r.classList.contains('open')); }
+function recipBrowse(){   // drop into the normal folder view (gallery leads with the cover hero)
+  const t=_shareTarget;
+  closeRecipientView(); closeShareDialog();
+  if(t && t.isFolder && state.live && t.id!==coverKey() && t.id!=='estate' && !/^nav:/.test(t.id)){ openLiveFolder(t.id, t.name, 'gallery'); return; }
+  setView('gallery');
+}
+/* esc closes the recipient view / share dialog before any other shortcut fires */
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  if(recipientOpen()){ closeRecipientView(); e.stopImmediatePropagation(); return; }
+  const m=document.getElementById('shareDlg');
+  if(m && m.classList.contains('open')){ closeShareDialog(); e.stopImmediatePropagation(); }
+}, true);
 
 /* ============ live search ============ */
 const searchInput = document.querySelector('.search input');
@@ -2668,7 +2893,7 @@ const PROVIDER = {
 };
 function providerOf(nameOrAgent){
   if(typeof nameOrAgent==='object' && nameOrAgent) return nameOrAgent.provider||'gemini';
-  return (''+nameOrAgent).indexOf('Claude')>=0 ? 'claude' : 'gemini';
+  return /claude/i.test(''+nameOrAgent) ? 'claude' : 'gemini';
 }
 function claudeMark(px){return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="#D97757"><path d="M12 2c.6 0 1 .4 1 1v6.2l4.4-4.4a1 1 0 011.4 1.4L14.4 11H21a1 1 0 010 2h-6.6l4.4 4.4a1 1 0 01-1.4 1.4L13 14.4V21a1 1 0 01-2 0v-6.6l-4.4 4.4a1 1 0 01-1.4-1.4L9.6 13H3a1 1 0 010-2h6.6L5.2 6.6a1 1 0 011.4-1.4L11 9.6V3c0-.6.4-1 1-1z"/></svg>`;}
 function agentMark(providerOrName,px){ return providerOf(providerOrName)==='claude' ? claudeMark(px) : avatarSpark(px); }
@@ -2678,6 +2903,45 @@ function scopeBadge(scope){
     : `<span class="scope-b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> This folder</span>`;
 }
 function relWhen(n){return n===0?'today':(n===1?'yesterday':dstr(daysAgo(n)));}
+/* ---- folder identity for agent scoping (mock folders use 'mock:<name>' keys) ---- */
+function curFolderRef(){
+  const cf=state.curFolder;
+  if(cf && cf.id && cf.id!=='root') return {key:cf.id, name:cf.name};
+  if(!state.live) return {key:'mock:Estate docs', name:'Estate docs'};   // mock prototype folder
+  return {key:'root', name:'My Drive'};
+}
+function agentsHere(){
+  const k=curFolderRef().key;
+  return AGENTS.filter(a=>a.scope==='global' || a.folderKey===k);
+}
+function agentOfFolder(keyOrItem){   // first folder-scoped agent attached to a folder (id, contentId, or mock name key)
+  let keys;
+  if(typeof keyOrItem==='string') keys=[keyOrItem];
+  else if(keyOrItem && keyOrItem.isFolder) keys=[keyOrItem.id, cidOf(keyOrItem), 'mock:'+(keyOrItem.short||keyOrItem.name)];
+  else return null;
+  return AGENTS.find(a=>a.scope==='folder' && keys.indexOf(a.folderKey)>=0) || null;
+}
+function folderAgentMark(keyOrItem,px){   // small provider mark shown next to folders that have an agent
+  const a=agentOfFolder(keyOrItem);
+  return a ? `<span class="fol-agent" title="${escapeHTML(a.name)} works in this folder">${agentMark(a.provider,px||12)}</span>` : '';
+}
+function spawnAgentForFolder(f){   // context-menu entry point
+  if(!f || !f.isFolder) return;
+  const key = f.live ? cidOf(f) : 'mock:'+(f.short||f.name);
+  openSpawn(key, f.short||f.name);
+}
+/* ---- one-tap purpose presets for the spawn panel ---- */
+const SPAWN_PRESETS=[
+  {label:'Keep this folder organized',
+   text:'Keep this folder organized: apply my naming convention to new files, group loose files into subfolders, and flag anything misfiled or duplicated.'},
+  {label:'Draft new files from what lands here',
+   text:'When something new lands in this folder, draft a starting-point doc from it (summary, reply, or checklist) and leave it here for my review.'}
+];
+function applyPreset(i){
+  spawnDraft.instr=SPAWN_PRESETS[i].text;
+  const ta=document.getElementById('spInstr'); if(ta){ ta.value=spawnDraft.instr; ta.focus(); }
+  document.querySelectorAll('#spPresets .preset-chip').forEach((b,bi)=>b.classList.toggle('on',bi===i));
+}
 
 /* ============ presence stack ============ */
 function renderPresence(){
@@ -2693,17 +2957,22 @@ function renderPresence(){
 }
 
 /* ============ feeds ============ */
+function revertIco(px){return `<svg width="${px}" height="${px}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.4 9.4 0 00-6.7 3L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>`;}
 function feedHTMLfrom(items){
   return items.map(a=>{
-    const init=a.who.split(' ').map(w=>w[0]).slice(0,2).join('');
-    const icon=a.kind==='agent'?agentMark(a.who,17):init;
+    const init=(a.who||'?').split(' ').map(w=>w[0]).slice(0,2).join('');
+    const isAgent=a.kind==='agent', isRevert=a.kind==='revert';
+    const icon=isAgent?agentMark(a.provider||a.who,17):(isRevert?revertIco(16):init);
+    const badge=(isAgent?`<span class="fev-badge">Agent</span>`:'')
+               +(isRevert?`<span class="fev-badge">Restore</span>`:'')
+               +(a.reverted?`<span class="fev-badge reverted-b">Reverted</span>`:'');
     const when=a.when===0?'Today':dstr(daysAgo(a.when));
     const attach=a.attach?`<div class="fev-attach"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v5h5"/><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2z"/></svg> ${a.attach.file}<span class="undo">Undo</span></div>${a.attach.extra?`<div class="fev-attach" style="margin-top:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> ${a.attach.extra}</div>`:''}`:'';
     const src=a.source?`<div class="fev-src">${srcChip(a.source)}</div>`:'';
-    return `<div class="fev">
-      <div class="fev-rail"><div class="fev-dot ${a.kind}">${icon}</div></div>
+    return `<div class="fev ${a.reverted?'reverted':''}">
+      <div class="fev-rail"><div class="fev-dot ${isAgent?'agent':(isRevert?'revert':'person')}">${icon}</div></div>
       <div class="fev-body">
-        <div class="fev-top"><b>${a.title}</b><span class="when">${when}</span></div>
+        <div class="fev-top"><b>${a.title}</b>${badge}<span class="when">${when}</span></div>
         <div class="fev-desc">${a.desc}</div>
         ${attach}${src}
       </div>
@@ -2711,9 +2980,10 @@ function feedHTMLfrom(items){
   }).join('') || `<div style="color:var(--faint);font-size:13px;padding:8px 0">Nothing had happened in this folder yet at this point in time.</div>`;
 }
 function feedHTML(){
-  // user-spawned agent/task events (if any) on top of the folder's real recent changes
-  const seeded = ACTIVITY.filter(a=>a.when>=state.asOf);
-  return feedHTMLfrom(seeded.concat(liveFeed()));
+  // runtime events (agents created, restores, …) + the seeded mock history (mock mode only),
+  // on top of the folder's real recent changes when connected live.
+  const seeded = ACTIVITY.filter(a=>a.when>=state.asOf && !(a.est && state.live));
+  return state.live ? feedHTMLfrom(seeded.concat(liveFeed())) : feedHTMLfrom(seeded);
 }
 function renderFeeds(){
   document.getElementById('homeFeed').innerHTML = feedHTML();
@@ -2726,13 +2996,14 @@ function renderRoster(){
   const panel=document.getElementById('rosterPanel');
   if(!panel)return;
   if(state.spawning){ renderSpawn(panel); return; }
+  const here=curFolderRef(), list=agentsHere();
   panel.innerHTML = `
     <button class="roster-newbtn" onclick="openSpawn()">
       <span class="rn-spark">${avatarSpark(18)}</span>
-      <span class="rn-txt"><b>New agent</b><span>Describe a job; it lives in this folder</span></span>
+      <span class="rn-txt"><b>New agent</b><span>Describe a job; it lives in “${escapeHTML(here.name)}”</span></span>
     </button>
-    <div class="roster-h">${AGENTS.length? AGENTS.length+' agent'+(AGENTS.length===1?'':'s')+' working here' : 'No agents yet — add one to watch this folder'}</div>
-    ${AGENTS.map(a=>`
+    <div class="roster-h">${list.length? list.length+' agent'+(list.length===1?'':'s')+' working in “'+escapeHTML(here.name)+'”' : 'No agents yet — add one to watch “'+escapeHTML(here.name)+'”'}</div>
+    ${list.map(a=>`
       <div class="rcard ${a.status==='paused'?'paused':''}" onclick="openAgentChat('${a.id}')">
         <div class="rcard-av">${agentMark(a.provider,20)}</div>
         <div class="rcard-main">
@@ -2758,7 +3029,13 @@ function toggleAgent(id){
 
 /* ============ spin up a new agent ============ */
 let spawnDraft={name:'',instr:'',trigger:'On demand',provider:'claude'};
-function openSpawn(){ state.spawning=true; spawnDraft={name:'',instr:'',trigger:'On demand',provider:'claude'}; openAgent('roster'); renderRoster(); }
+function openSpawn(folderKey, folderName){
+  const here=curFolderRef();
+  state.spawning=true; state.activeAgent=null;
+  spawnDraft={name:'',instr:'',trigger:'On demand',provider:'claude',
+    folderKey:folderKey||here.key, folderName:folderName||here.name};
+  openAgent('roster'); renderRoster();
+}
 function cancelSpawn(){ state.spawning=false; renderRoster(); }
 function renderSpawn(panel){
   panel.innerHTML = `
@@ -2775,11 +3052,14 @@ function renderSpawn(panel){
       </div>
       <div class="spawn-field">
         <label>Nickname <span style="color:var(--faint);font-weight:400">(optional)</span></label>
-        <input id="spName" placeholder="e.g. Notary Tracker" value="${spawnDraft.name}" oninput="spawnDraft.name=this.value">
+        <input id="spName" placeholder="e.g. Notary Tracker" value="${escapeHTML(spawnDraft.name)}" oninput="spawnDraft.name=this.value">
       </div>
       <div class="spawn-field">
         <label>What should it do</label>
-        <textarea id="spInstr" rows="3" placeholder="Watch for unsigned documents and remind me before each notary appointment…" oninput="spawnDraft.instr=this.value">${spawnDraft.instr}</textarea>
+        <textarea id="spInstr" rows="3" placeholder="Watch for unsigned documents and remind me before each notary appointment…" oninput="spawnDraft.instr=this.value">${escapeHTML(spawnDraft.instr)}</textarea>
+        <div class="spawn-presets" id="spPresets">
+          ${SPAWN_PRESETS.map((p,i)=>`<button class="preset-chip ${spawnDraft.instr===p.text?'on':''}" onclick="applyPreset(${i})">${p.label}</button>`).join('')}
+        </div>
       </div>
       <div class="spawn-field">
         <label>Trigger</label>
@@ -2789,7 +3069,7 @@ function renderSpawn(panel){
       </div>
       <div class="spawn-field">
         <label>Scope</label>
-        <div class="spawn-scope">${avatarSpark(15)} This folder · <b>Estate docs</b>
+        <div class="spawn-scope"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> This folder · <b>${escapeHTML(spawnDraft.folderName||'Estate docs')}</b>
           <svg class="lock" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
         </div>
       </div>
@@ -2803,20 +3083,34 @@ function setSpawnTrigger(t){ spawnDraft.trigger=t; document.querySelectorAll('#s
 function setSpawnProvider(p){ spawnDraft.provider=p; renderRoster(); }
 function createAgent(){
   const prov=spawnDraft.provider||'claude';
-  const nick=(spawnDraft.name||'').trim();
+  const nick=escapeHTML((spawnDraft.name||'').trim());
   const name=PROVIDER[prov].label+' agent'+(nick?' · '+nick:'');
   const id='agent'+(AGENTS.length+1)+'-'+Date.now().toString(36);
   const purpose=(spawnDraft.instr||'').trim()||'A new agent in this folder.';
-  const a={id,name,provider:prov,role:'In this folder',status:'active',runs:0,created:0,lastRun:0,createdBy:'David Wurtz',scope:'folder',
-    purpose, lastAction:'Just created — '+(spawnDraft.trigger==='On demand'?'ready when you are.':spawnDraft.trigger.toLowerCase()+' trigger armed.')};
+  const fname=spawnDraft.folderName||curFolderRef().name;
+  const fkey=spawnDraft.folderKey||curFolderRef().key;
+  // a believable first pass over the folder's current contents
+  const pool=(fkey===curFolderRef().key ? FILES : (folderCache[fkey]||[])).filter(x=>!x.isFolder && !isFuture(x));
+  const n=pool.length;
+  const firstDesc = n>=2
+    ? `Scanned <b>${escapeHTML(fname)}</b> and proposed grouping ${n} loose files into subfolders by type — holding the change for your review.`
+    : `Scanned <b>${escapeHTML(fname)}</b>, indexed what's here, and is watching for new arrivals.`;
+  const a={id,name,provider:prov,role:'In '+fname,status:'active',runs:1,created:0,lastRun:0,createdBy:'David Wurtz',
+    scope:'folder', folderKey:fkey, folderName:fname,
+    purpose, lastAction:(n>=2?`Proposed a grouping of ${n} loose files — awaiting review.`:'Watching for new arrivals.')};
   AGENTS.push(a);
-  AGENT_CHAT[id]={intro:`Hi — I'm <b>${name}</b>. ${purpose} I'll run <b>${spawnDraft.trigger.toLowerCase()}</b> in Estate docs.`,
-    suggest:['What will you do first?','Show me your trigger','Pause for now']};
-  ACTIVITY.unshift({kind:'agent', who:name, when:0, title:name,
-    desc:`Created by David Wurtz · ${spawnDraft.trigger} · scoped to Estate docs.`, source:{app:'Drive'}});
+  AGENT_CHAT[id]={intro:`Hi — I'm <b>${name}</b>. ${escapeHTML(purpose)} I'll run <b>${spawnDraft.trigger.toLowerCase()}</b> in ${escapeHTML(fname)}.`,
+    suggest:['What did you propose?','Show me your trigger','Pause for now']};
+  ACTIVITY.unshift({kind:'agent', who:name, provider:prov, when:0, title:name,
+    desc:`Created by David Wurtz · ${spawnDraft.trigger} · scoped to ${escapeHTML(fname)}.`, source:{app:'Drive'}});
+  ACTIVITY.unshift({kind:'agent', who:name, provider:prov, when:0, title:name, desc:firstDesc, source:{app:'Drive'}});
   state.spawning=false;
-  renderRoster(); renderPresence(); renderFeeds(); renderInfo();
-  toast(name+' is now live in this folder');
+  renderRoster(); renderPresence(); renderFeeds(); renderInfo(); renderPins();
+  if(state.view==='gallery') renderGallery();
+  else if(state.view==='columns'){ if(state.live) renderColumns(); }
+  else if(state.view==='carousel') renderCarousel();
+  else renderList();
+  toast(name+' is now live in “'+fname+'”');
 }
 
 /* ============ open an agent's scoped chat/history ============ */
@@ -2835,7 +3129,7 @@ function renderDrawerHead(){
   if(state.activeAgent){
     const a=AGENTS.find(x=>x.id===state.activeAgent);
     if(av) av.innerHTML = agentMark(a.provider,18);
-    name.innerHTML = `${a.name}<span>powered by ${PROVIDER[providerOf(a)].label} · ${a.scope==='global'?'all of Drive':'this folder'}</span>`;
+    name.innerHTML = `${a.name}<span>powered by ${PROVIDER[providerOf(a)].label} · ${a.scope==='global'?'all of Drive':escapeHTML(a.folderName||'this folder')}</span>`;
     if(!back){
       back=document.createElement('button');
       back.id='dwBackBtn'; back.className='dw-back'; back.style.marginRight='10px';
@@ -2845,7 +3139,7 @@ function renderDrawerHead(){
     }
   }else{
     if(av) av.innerHTML = agentMark('gemini',18);
-    name.innerHTML = `Agents<span>in ${escapeHTML((state.curFolder&&state.curFolder.name)||'My Drive')}</span>`;
+    name.innerHTML = `Agents<span>in ${escapeHTML(state.spawning ? (spawnDraft.folderName||'this folder') : curFolderRef().name)}</span>`;
     if(back)back.remove();
   }
 }
@@ -2955,7 +3249,7 @@ function taskRowHTML(t){
                 :'<span class="tk-ic work"></span>';
   const when=(t.when===0||t.when===undefined)?'today':relWhen(t.when);
   return `<div class="tk-row ${done?'':'working'}">${ic}
-    <div class="tk-main"><div class="tk-txt">${t.text}</div>
+    <div class="tk-main"><div class="tk-txt">${escapeHTML(t.text)}</div>
     <div class="tk-by">${agentMark(t.provider,12)} ${PROVIDER[t.provider].label} agent · ${done?when:'working…'}</div></div></div>`;
 }
 function renderTasks(){
@@ -2982,8 +3276,8 @@ function assignTask(){
   toast(PROVIDER[taskAgent].label+' agent is on it');
   setTimeout(()=>{
     t.status='done';
-    ACTIVITY.unshift({kind:'agent',who:PROVIDER[t.provider].label+' agent',when:0,title:PROVIDER[t.provider].label+' agent',
-      desc:'Completed a task: “'+text+'”.'});
+    ACTIVITY.unshift({kind:'agent',who:PROVIDER[t.provider].label+' agent',provider:t.provider,when:0,title:PROVIDER[t.provider].label+' agent',
+      desc:'Completed a task: “'+escapeHTML(text)+'”.'});
     renderTasks(); renderFeeds(); renderInfo();
     toast(PROVIDER[t.provider].label+' agent finished the task');
   },2200);
@@ -3031,7 +3325,8 @@ agentBtn.addEventListener('click',()=>state.agentOpen?closeAgent():openAgent());
 document.getElementById('dwTabs').addEventListener('click',e=>{const t=e.target.closest('.dw-tab');if(t)switchTab(t.dataset.tab);});
 function switchTab(tab){
   if((tab==='chat'||tab==='history') && !state.activeAgent && !state.spawning){
-    const first=AGENTS.find(a=>a.status==='active')||AGENTS[0];
+    const pool=agentsHere();
+    const first=pool.find(a=>a.status==='active')||pool[0]||AGENTS[0];
     if(first){ openAgentChat(first.id); if(tab==='history'){ switchTab('history'); } return; }
   }
   document.querySelectorAll('.dw-tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
@@ -3089,10 +3384,12 @@ function asOfIndex(){
 function vtlRowHTML(a,i,idx){
   const future=i<idx;
   const when=a.when===0?'Today':dstr(daysAgo(a.when));
-  const who=a.kind==='agent'?`<span class="vtl-mark">${agentMark(a.who,15)}</span>`
-    :`<span class="vtl-mark vtl-init">${a.who.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>`;
-  return `<div class="vtl-row ${future?'future':''} ${i===idx?'asof':''}" data-i="${i}" onclick="setAsOfIndex(${i})">
-    <div class="vtl-top">${who}<b>${a.title}</b><span class="when">${when}</span></div>
+  const who=a.kind==='agent'?`<span class="vtl-mark">${agentMark(a.provider||a.who,15)}</span>`
+    :a.kind==='revert'?`<span class="vtl-mark vtl-revert">${revertIco(13)}</span>`
+    :`<span class="vtl-mark vtl-init">${(a.who||'?').split(' ').map(w=>w[0]).slice(0,2).join('')}</span>`;
+  const tag=a.reverted?`<span class="fev-badge reverted-b">Reverted</span>`:'';
+  return `<div class="vtl-row ${future?'future':''} ${i===idx?'asof':''} ${a.reverted?'reverted':''}" data-i="${i}" onclick="setAsOfIndex(${i})">
+    <div class="vtl-top">${who}<b>${a.title}</b>${tag}<span class="when">${when}</span></div>
     <div class="vtl-desc">${a.desc}</div>
   </div>`;
 }
@@ -3193,21 +3490,53 @@ function renderInfo(){
     return;
   }
   // ----- FOLDER mode -----
-  const fname=(state.curFolder&&state.curFolder.name)||'My Drive';
+  const fname=(state.curFolder&&state.curFolder.name)||(!state.live?'Estate docs':'My Drive');
   if(tEl) tEl.textContent='Folder activity';
   if(sEl) sEl.textContent='Who did what in '+fname;
   const items=getVisibleFiles();
   const folders=items.filter(f=>f.isFolder).length, files=items.length-folders;
   const owner=(DRIVE_USER&&DRIVE_USER.displayName)||'You';
-  document.getElementById('ipBody').innerHTML=`
+  const stats=`
     <div class="ip-stats">
       <div class="ip-stat"><div class="k">Items</div><div class="v">${items.length}</div></div>
       <div class="ip-stat"><div class="k">Folders</div><div class="v">${folders}</div></div>
       <div class="ip-stat"><div class="k">Files</div><div class="v">${files}</div></div>
       <div class="ip-stat"><div class="k">Owner</div><div class="v">${escapeHTML(owner)}</div></div>
-    </div>
+    </div>`;
+  // live folders keep the simple feed; the time machine operates on the mock Estate docs history
+  const mock = !state.live && state.level==='folder' && ACTIVITY.length>0;
+  if(!mock){
+    document.getElementById('ipBody').innerHTML= stats + `
     <h4 class="ip-h" style="margin:20px 0 14px">Recent changes</h4>
     <div class="feed">${feedHTMLfrom(liveFeed())}</div>`;
+    return;
+  }
+  const idx=asOfIndex();
+  const cur=ACTIVITY[idx]||{when:0};
+  const label=cur.when===0?'Today':dstr(daysAgo(cur.when));
+  const since=ACTIVITY.slice(0,idx).filter(a=>!a.reverted&&a.kind!=='revert').length;
+  const restoreBar = idx>0 ? `
+    <div class="ip-restore">
+      <div class="t">Viewing <b>${label}</b> — ${since} change${since===1?'':'s'} since</div>
+      <div class="ip-restore-acts">
+        <button class="aabtn primary" onclick="restoreToAsOf()">Restore this version</button>
+        <button class="ip-now" onclick="resetTime()">Back to now</button>
+      </div>
+    </div>` : '';
+  document.getElementById('ipBody').innerHTML= restoreBar + stats + `
+    <div class="ip-time-hd">
+      <div><div class="k">Viewing as of</div><div class="v">${label}</div>
+      <div class="ip-hint">Drag the dot or click an event to look back</div></div>
+    </div>
+    <h4 class="ip-h" style="margin:0 0 16px">Folder history</h4>
+    <div class="vtl" id="vtl">
+      <div class="vtl-line" id="vtlLine"></div>
+      <div class="vtl-line-fill" id="vtlFill"></div>
+      ${ACTIVITY.map((a,i)=>vtlRowHTML(a,i,idx)).join('')}
+      <div class="vtl-knob" id="vtlKnob"></div>
+    </div>`;
+  layoutTimeline(); bindKnob();
+  setTimeout(layoutTimeline, 450);   // re-measure after the panel's 0.42s width transition
 }
 function layoutTimeline(){
   const vtl=document.getElementById('vtl'); if(!vtl)return;
@@ -3222,22 +3551,50 @@ function layoutTimeline(){
   const fill=document.getElementById('vtlFill'); fill.style.top=centers[0]+'px'; fill.style.height=(centers[idx]-centers[0])+'px';
 }
 function bindKnob(){
-  const knob=document.getElementById('vtlKnob'), vtl=document.getElementById('vtl'); if(!knob)return;
+  const knob=document.getElementById('vtlKnob'); if(!knob)return;
   function nearest(clientY){
+    const vtl=document.getElementById('vtl'); if(!vtl) return 0;
     const rs=[...vtl.querySelectorAll('.vtl-row')]; let best=0,bd=1e9;
     rs.forEach((r,i)=>{const b=r.getBoundingClientRect();const cy=b.top+18;const d=Math.abs(cy-clientY);if(d<bd){bd=d;best=i;}});
     return best;
   }
-  function move(e){ const i=nearest(e.clientY); if(ACTIVITY[i].when!==state.asOf) setAsOfIndex(i); e.preventDefault(); }
+  function move(e){ const i=nearest(e.clientY); if(ACTIVITY[i] && ACTIVITY[i].when!==state.asOf) setAsOfIndex(i); e.preventDefault(); }
   function up(){ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); }
   knob.addEventListener('pointerdown',e=>{ e.preventDefault(); document.addEventListener('pointermove',move); document.addEventListener('pointerup',up); });
 }
 function setAsOfIndex(i){
-  state.asOf=ACTIVITY[i].when;
+  state.asOf = ACTIVITY[i] ? ACTIVITY[i].when : 0;
   renderList(); renderGallery(); if(state.view==='carousel')renderCarousel();
   renderInfo();
 }
 function resetTime(){ setAsOfIndex(0); }
+/* Restore: make the scrubbed-to point the real present. History is append-only —
+   undone entries stay in the feed, struck through and tagged "Reverted". */
+function restoreToAsOf(){
+  const idx=asOfIndex(); if(idx<=0){ resetTime(); return; }
+  const cutoff=state.asOf;
+  const label=cutoff===0?'today':dstr(daysAgo(cutoff));
+  let n=0;
+  ACTIVITY.forEach(a=>{ if(a.when<cutoff && !a.reverted && a.kind!=='revert'){ a.reverted=true; n++; } });
+  FILES.forEach(f=>{ if((f.added||0)<cutoff) f.revertedOut=true; });
+  const me=(DRIVE_USER&&DRIVE_USER.displayName)||'David Wurtz';
+  ACTIVITY.unshift({kind:'revert', who:me, when:0, title:me, est:!state.live,
+    desc:'Restored the folder to '+label+' — '+n+' change'+(n===1?'':'s')+' undone. The reverted history is kept below for the record.'});
+  state.asOf=0;
+  if(state.selected){ const sf=FILES.find(x=>x.id===state.selected); if(sf && sf.revertedOut) state.selected=null; }
+  // cover fallback: if the folder's elevated cover was reverted away, fall back to the newest surviving file
+  const ck=coverKey(), cid=COVER_BY_FOLDER[ck];
+  const cov=cid && FILES.find(x=>x.id===cid);
+  if(cid && (!cov || cov.revertedOut)){
+    const first=FILES.find(f=>!isFuture(f)&&!f.isFolder)||FILES.find(f=>!isFuture(f));
+    if(first) COVER_BY_FOLDER[ck]=first.id; else delete COVER_BY_FOLDER[ck];
+    state.coverId=first&&first.id; state.userCover=null;
+  }
+  if(state.view==='list') renderListView(); else renderList();   // listView also refreshes the preview pane
+  renderGallery(); if(state.view==='carousel')renderCarousel();
+  renderFeeds(); renderInfo();
+  toast('Folder restored to '+label);
+}
 function closeInfo(){
   if(!state.infoOpen) return;
   state.infoOpen=false;
@@ -3295,7 +3652,7 @@ function renderPins(){
   if(!PINS.length){ z.innerHTML='<div class="pin-empty" id="pinEmpty">Drag files or folders here</div>'; return; }
   z.innerHTML=PINS.map((p,i)=>`<div class="nav-item pin-item" title="${p.label}" onclick="openPin(PINS[${i}])">
     <span class="ico">${p.kind==='folder'?folderIco16():fileIco16()}</span>
-    <span class="label">${p.label}</span>
+    <span class="label">${p.label}</span>${p.kind==='folder'&&agentOfFolder(p.id||p.key)?'<span class="agent-dot"></span>':''}
     <button class="pin-x" title="Remove" onclick="event.stopPropagation();removePin(${i})">×</button>
   </div>`).join('');
 }
@@ -3576,7 +3933,7 @@ function renderHome(){
   const folders=items.filter(f=>f.isFolder).length, files=items.length-folders;
   const s=document.getElementById('homeSub');
   if(s) s.textContent=items.length ? `${items.length} item${items.length===1?'':'s'} · ${folders} folder${folders===1?'':'s'}, ${files} file${files===1?'':'s'}` : 'This folder is empty.';
-  const hf=document.getElementById('homeFeed'); if(hf) hf.innerHTML=feedHTMLfrom(liveFeed());
+  const hf=document.getElementById('homeFeed'); if(hf) hf.innerHTML=feedHTML();
 }
 function loadDriveRoot(){
   loadAbout();
@@ -3589,7 +3946,7 @@ function renderMyDriveLive(){
   document.querySelector('.stage-wrap').classList.add('ghost');
   const sc=document.getElementById('screen'); sc.classList.remove('ghost');
   sc.innerHTML=`<div class="md-h">My Drive</div><div class="md-sub">Your live Google Drive · ${LIVE_FOLDERS.length} folder${LIVE_FOLDERS.length===1?'':'s'}</div>
-    <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.id}')" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${f.name}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
+    <div class="md-grid">${LIVE_FOLDERS.map(f=>`<div class="md-folder" draggable="true" ondragstart="dragItem(event,'folder','${f.id}')" oncontextmenu="openRowCtx(event,'${f.id}')" onclick="openLiveFolder('${f.id}',this.dataset.n)" data-n="${(f.name||'').replace(/"/g,'&quot;')}"><div class="md-fico">${folderIco()}</div><div style="min-width:0"><div class="md-fname">${escapeHTML(f.name)}${folderAgentMark(f.id,12)}</div><div class="md-fmeta">Google Drive folder</div></div></div>`).join('')||'<div class="md-empty">No folders in My Drive root.</div>'}</div>`;
   renderCrumbs(null);
   setNavActive(null);
 }
@@ -3600,7 +3957,7 @@ function openLiveFolder(id,name,targetView){
   state.navKind=null;
   state.curFolder = {id:(isRoot?'root':id), name:(isRoot?'My Drive':(name||'Folder'))};
   // ---- immediate feedback (before the network call) ----
-  FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.userCover=null; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
+  FILES.length=0; state.selected=null; state.focused=false; state.query=''; state.userCover=null; state.asOf=0; state.filesFolderId=(isRoot?'root':id); state.loadingFolder=true;
   if(isRoot){
     state.level='mydrive';
     renderCrumbs(null);
@@ -3681,9 +4038,9 @@ function renderColumns(){
     proms.push(colChildren(node.id).then(items=>{
       col.innerHTML=items.map(f=>{
         const sel=(COL_PATH[li+1]&&COL_PATH[li+1].id===f.id)||colSelectedFile===f.id;
-        return `<div class="col-row ${sel?'sel':''}" draggable="true" ondragstart="dragItem(event,'${f.isFolder?'folder':'file'}','${f.id}')" onclick="colClick(${li},'${f.id}')">
+        return `<div class="col-row ${sel?'sel':''}" draggable="true" ondragstart="dragItem(event,'${f.isFolder?'folder':'file'}','${f.id}')" oncontextmenu="openColCtx(event,${li},'${f.id}')" onclick="colClick(${li},'${f.id}')">
           <span class="col-ico">${f.isFolder?folderIco16():fileIco16()}</span>
-          <span class="col-name">${f.name}</span>${f.isFolder?'<span class="col-chev">›</span>':''}</div>`;
+          <span class="col-name">${f.name}</span>${f.isFolder?folderAgentMark(f,11):''}${COVER_BY_FOLDER[node.id]===f.id?'<span class="cover-tag">COVER</span>':''}${f.isFolder?'<span class="col-chev">›</span>':''}</div>`;
       }).join('')||'<div class="col-empty">Empty folder</div>';
     }).catch(()=>{ col.innerHTML='<div class="col-empty">Could not load</div>'; }));
   });
